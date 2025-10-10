@@ -1,2 +1,2 @@
-# Spell_Casting
+# Spell-Casting
 Project for Programming Class
