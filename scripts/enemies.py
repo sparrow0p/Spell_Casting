@@ -1,13 +1,18 @@
 from random import random
+
+import pygame
+
 from settings import *
 
 class Bat(pygame.sprite.Sprite):
     def __init__(self, pos, groups, player, collision_sprites):
         super().__init__(groups)
+        self.groups = groups
         self.frames = {}
         self.load_images()
         self.player = player
         self.state = 'move'
+        self.old_state = 'move'
         self.frame_index = 0
         self.image = pygame.image.load(join('images', 'enemies', 'bat', 'move', '0.png')).convert_alpha()
         self.rect = self.image.get_rect(center=pos)
@@ -16,6 +21,7 @@ class Bat(pygame.sprite.Sprite):
         self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, -0.75 * BAT_SIZE)
         self.hitbox.bottom = self.rect.bottom
         self.collision_sprites = collision_sprites
+        self.angle = 0
 
         # movement
         self.direction = pygame.Vector2()
@@ -34,6 +40,7 @@ class Bat(pygame.sprite.Sprite):
         self.rng_num = 0
         self.rng_num_timer = 0
         self.rng_num_timer_max = 1
+        self.rng_vec = pygame.Vector2()
 
     def load_images(self):
         folders = list(walk(join('images', 'enemies', 'bat')))[0][1]
@@ -47,11 +54,20 @@ class Bat(pygame.sprite.Sprite):
                     self.frames[folder].append(surf)
 
     def locate_player(self):
-        if not self.lunge_timer > 0:
-            angle = math.atan2(self.player.pos.y - self.pos.y, self.player.pos.x - self.pos.x)
-            self.direction = pygame.Vector2(math.cos(angle), math.sin(angle))
-            if self.direction:
-                self.direction = self.direction.normalize()
+        match self.state:
+            case 'move':
+                target_pos = self.player.pos + self.rng_vec
+                self.angle = math.atan2(target_pos.y - self.pos.y, target_pos.x - self.pos.x)
+            case 'charge':
+                if self.old_state == 'move':
+                    self.angle = math.atan2(self.player.pos.y + self.player.vel.y * 0.5 - self.pos.y,
+                                            self.player.pos.x + self.player.vel.x * 0.5 - self.pos.x)
+            case 'lunge':
+                return
+
+        self.direction = pygame.Vector2(math.cos(self.angle), math.sin(self.angle))
+        if self.direction:
+            self.direction = self.direction.normalize()
 
     def move(self, dt):
         match self.state:
@@ -91,6 +107,8 @@ class Bat(pygame.sprite.Sprite):
                         self.pos.y = self.hitbox.centery
 
     def change_state(self):
+        self.old_state = self.state
+
         match self.state:
             case 'move':
                 if math.hypot(self.pos.x - self.player.pos.x, self.pos.y - self.player.pos.y) < 200 and not self.attack_cooldown > 0:
@@ -117,6 +135,9 @@ class Bat(pygame.sprite.Sprite):
         else:
             self.rng_num_timer = self.rng_num_timer_max
             self.rng_num = random()
+            ang = self.rng_num * 2 * math.pi
+            self.rng_vec = pygame.Vector2(math.cos(ang), math.sin(ang))
+            self.rng_vec.scale_to_length(150)
 
     def animate(self, dt):
         match self.state:
@@ -128,8 +149,42 @@ class Bat(pygame.sprite.Sprite):
         self.image = self.frames[self.state][int(self.frame_index) % len(self.frames[self.state])]
 
     def update(self, dt):
+        self.change_state()
         self.locate_player()
         self.move(dt)
-        self.change_state()
+        if self.old_state == 'move' and self.state == 'charge':
+            Attack(self.pos + self.direction * 150, - self.angle, self.groups, self.player, self.charge_timer_max)
         self.update_timer(dt)
         self.animate(dt)
+
+class Attack(pygame.sprite.Sprite):
+    def __init__(self, pos, angle, groups, player, charge_timer_max):
+        super().__init__(groups)
+        self.player = player
+        self.charge_timer = charge_timer_max
+        self.charge_timer_max = charge_timer_max
+        self.frames = []
+        for i in range(2):
+            self.frames.append(pygame.image.load(join('images', 'enemies', 'attacks', 'bat_hit_effect', f'{i}.png')).convert_alpha())
+            self.frames[i] = pygame.transform.scale(self.frames[i], (1.5 * BAT_ATTACK_SIZE, BAT_ATTACK_SIZE))
+            self.frames[i] = pygame.transform.rotate(self.frames[i], angle / math.pi * 180)
+        self.image = self.frames[0]
+        self.image.set_alpha(int(255 * 0.25 ** 4))
+        self.rect = self.image.get_rect(center=pos)
+        self.hitbox = self.image.get_rect(center=pos)
+        self.pos = pygame.Vector2(self.rect.center)
+        self.angle = angle
+
+    def animate(self, dt):
+        delta = (self.charge_timer_max - self.charge_timer) / self.charge_timer_max
+        if self.charge_timer > 0.2:
+            self.image.set_alpha(255 * (0.25 + 0.75 * delta) ** 4)
+        else:
+            self.image = self.frames[1]
+
+    def update(self, dt):
+        if not self.charge_timer > 0.1:
+            self.kill()
+
+        self.animate(dt)
+        self.charge_timer -= dt
