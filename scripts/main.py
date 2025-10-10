@@ -52,7 +52,9 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_x:
-                        self.player.dash()
+                        self.player.set_coyote_time_dash()
+                    if event.key == pygame.K_z:
+                        self.player.set_coyote_time_cast()
 
                 if event.type == self.enemy_event:
                     Bat(choice(self.spawn_positions), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)

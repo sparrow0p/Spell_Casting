@@ -177,13 +177,13 @@ class Attack(pygame.sprite.Sprite):
 
     def animate(self, dt):
         delta = (self.charge_timer_max - self.charge_timer) / self.charge_timer_max
-        if self.charge_timer > 0.2:
+        if self.charge_timer > 0.25:
             self.image.set_alpha(255 * (0.25 + 0.75 * delta) ** 4)
         else:
             self.image = self.frames[1]
 
     def update(self, dt):
-        if not self.charge_timer > 0.1:
+        if not self.charge_timer > 0.15:
             self.kill()
 
         self.animate(dt)
