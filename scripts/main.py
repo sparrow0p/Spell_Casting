@@ -32,14 +32,20 @@ class Game:
     def setup(self):
         map = load_pygame(join('data', 'maps', 'world.tmx'))
         for x, y, image in map.get_layer_by_name('Ground').tiles():
+            image = pygame.transform.scale(image, (64, 64))
+            Sprite((TILE_SIZE * x, TILE_SIZE * y), image, self.all_sprites)
+
+        for x, y, image in map.get_layer_by_name('Shadows').tiles():
+            image = pygame.transform.scale(image, (64, 64))
             Sprite((TILE_SIZE * x, TILE_SIZE * y), image, self.all_sprites)
 
         for obj in map.get_layer_by_name('Objects'):
-            CollisionSprite((obj.x, obj.y), obj.image, (self.all_sprites, self.collision_sprites))
+            resized_image = pygame.transform.scale(obj.image, (obj.width * 2, obj.height * 2))
+            CollisionSprite((obj.x, obj.y), resized_image, (self.all_sprites, self.collision_sprites))
 
         for obj in map.get_layer_by_name('Entities'):
             if obj.name == 'Player':
-                self.player = Player((obj.x, obj.y), self.all_sprites, self.collision_sprites)
+                self.player = Player((obj.x, obj.y), self.all_sprites, self.enemy_sprites, self.collision_sprites)
             elif obj.name == 'Enemy':
                 self.spawn_positions.append((obj.x, obj.y))
 

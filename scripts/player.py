@@ -1,11 +1,11 @@
 from spell_line import SpellLine
 from spell_book import *
-
 from settings import *
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, collision_sprites):
+    def __init__(self, pos, groups, enemy_sprites, collision_sprites):
         super().__init__(groups)
+        self.enemy_sprites = enemy_sprites
         self.frames = {}
         self.load_images()
         self.state, self.frame_index = 'idle_r', 0
@@ -178,12 +178,14 @@ class Player(pygame.sprite.Sprite):
         self.spell_list.pop(0)
         match self.spell_list:
             case []:
-                ShootingStar(self.pos, self.dash_dir, self.groups, self)
+                ShootingStar(self.pos, self.dash_dir, self.groups, self.enemy_sprites, self, self.collision_sprites)
                 return 'falling_star'
             case [0]:
+                print("fast_win")
                 return 'fast_wind'
             case[4]:
                 if spell_dir in (0, 2, 4, 6):
+                    print('stone_wall')
                     return 'stone_wall'
 
     def cast_fail(self):

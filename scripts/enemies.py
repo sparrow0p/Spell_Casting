@@ -16,9 +16,8 @@ class Bat(pygame.sprite.Sprite):
         self.frame_index = 0
         self.image = pygame.image.load(join('images', 'enemies', 'bat', 'move', '0.png')).convert_alpha()
         self.rect = self.image.get_rect(center=pos)
-        self.pos = pygame.Vector2(self.rect.centerx, self.rect.bottom)
-        self.pos += pygame.Vector2(0, 0.125 * BAT_SIZE)
-        self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, -0.75 * BAT_SIZE)
+        self.pos = pygame.Vector2(self.rect.center)
+        self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, BAT_SIZE)
         self.hitbox.bottom = self.rect.bottom
         self.collision_sprites = collision_sprites
         self.angle = 0
@@ -153,14 +152,15 @@ class Bat(pygame.sprite.Sprite):
         self.locate_player()
         self.move(dt)
         if self.old_state == 'move' and self.state == 'charge':
-            Attack(self.pos + self.direction * 150, - self.angle, self.groups, self.player, self.charge_timer_max)
+            Attack(self.pos + self.direction * 150, - self.angle, self.groups[0], self.player, self, self.charge_timer_max)
         self.update_timer(dt)
         self.animate(dt)
 
 class Attack(pygame.sprite.Sprite):
-    def __init__(self, pos, angle, groups, player, charge_timer_max):
+    def __init__(self, pos, angle, groups, player, bat, charge_timer_max):
         super().__init__(groups)
         self.player = player
+        self.bat = bat
         self.charge_timer = charge_timer_max
         self.charge_timer_max = charge_timer_max
         self.frames = []
@@ -183,7 +183,8 @@ class Attack(pygame.sprite.Sprite):
             self.image = self.frames[1]
 
     def update(self, dt):
-        if not self.charge_timer > 0.15:
+        print(self.bat)
+        if not self.charge_timer > 0.15 or not self.bat.alive():
             self.kill()
 
         self.animate(dt)

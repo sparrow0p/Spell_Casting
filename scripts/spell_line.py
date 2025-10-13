@@ -28,8 +28,9 @@ class SpellLine(pygame.sprite.Sprite):
                 if self.dir % 2 == 0:
                     surf = pygame.transform.scale(surf, (self.length, self.length))
                 else:
-                    surf = pygame.transform.scale(surf, (self.length * math.sqrt(2), self.length * math.sqrt(2)))
+                    surf = pygame.transform.scale(surf, (self.length * math.sqrt(2), self.length))
                 surf = pygame.transform.rotate(surf, -self.dir * 45)
+                # surf.fill((0, 0, 255))
                 self.frames.append(surf)
 
     def set_pos(self):
@@ -37,22 +38,22 @@ class SpellLine(pygame.sprite.Sprite):
             case 0:
                 return self.pos + pygame.Vector2(self.length / 2, 0)
             case 1:
-                return self.pos + pygame.Vector2(0, 0)
+                return self.pos + pygame.Vector2(self.length / 8, self.length / 8)
             case 2:
                 return self.pos + pygame.Vector2(0, self.length / 2)
             case 3:
-                return self.pos + pygame.Vector2(-self.length, 0)
+                return self.pos + pygame.Vector2(-self.length * 7/8, self.length / 8)
             case 4:
                 return self.pos + pygame.Vector2(-self.length / 2, 0)
             case 5:
-                return self.pos + pygame.Vector2(-self.length, -self.length)
+                return self.pos + pygame.Vector2(-self.length * 7/8, -self.length * 7/8)
             case 6:
                 return self.pos + pygame.Vector2(0, -self.length / 2)
             case 7:
-                return self.pos + pygame.Vector2(0, -self.length)
+                return self.pos + pygame.Vector2(self.length / 8, -self.length * 7/8)
 
     def animate(self, dt):
-        self.frame_index += 3 * dt
+        self.frame_index += 12 * dt
         self.image = self.frames[int(self.frame_index) % len(self.frames)]
 
     def update(self, dt):
