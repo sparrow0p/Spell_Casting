@@ -1,3 +1,5 @@
+import pygame
+
 from settings import *
 
 class Sprite(pygame.sprite.Sprite):
@@ -13,5 +15,4 @@ class CollisionSprite(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = surf
         self.rect = self.image.get_rect(topleft=pos)
-        self.hitbox = self.rect.inflate(-0.25 * self.rect.width, -0.75 * self.rect.height)
-        self.hitbox.bottom = self.rect.bottom
+        self.hitbox = self.rect

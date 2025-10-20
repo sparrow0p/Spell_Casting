@@ -1,0 +1,63 @@
+{
+    "activeFile": "world.tmx",
+    "expandedProjectPaths": [
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets",
+        "."
+    ],
+    "fileStates": {
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Grass.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Ground.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Plant.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Shadows.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Wall.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "world.tmx": {
+            "scale": 1,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 471,
+                "y": 296.5
+            }
+        }
+    },
+    "last.imagePath": "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/graphics/objects/Plants",
+    "openFiles": [
+        "world.tmx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Grass.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Ground.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Plant.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Shadows.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Wall.tsx"
+    ],
+    "project": "world.tiled-project",
+    "property.type": "int",
+    "recentFiles": [
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Wall.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Shadows.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Plant.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Ground.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Grass.tsx",
+        "world.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.type": 1
+}

@@ -152,7 +152,8 @@ class Bat(pygame.sprite.Sprite):
         self.locate_player()
         self.move(dt)
         if self.old_state == 'move' and self.state == 'charge':
-            Attack(self.pos + self.direction * 150, - self.angle, self.groups[0], self.player, self, self.charge_timer_max)
+            attack = Attack(self.pos + self.direction * 150, - self.angle, self.groups[0], self.player, self, self.charge_timer_max)
+            attack._layer = 11
         self.update_timer(dt)
         self.animate(dt)
 
@@ -175,17 +176,21 @@ class Attack(pygame.sprite.Sprite):
         self.pos = pygame.Vector2(self.rect.center)
         self.angle = angle
 
-    def animate(self, dt):
+    def animate(self):
         delta = (self.charge_timer_max - self.charge_timer) / self.charge_timer_max
         if self.charge_timer > 0.25:
             self.image.set_alpha(255 * (0.25 + 0.75 * delta) ** 4)
         else:
             self.image = self.frames[1]
+            mask = pygame.mask.from_surface(self.image)
+            offset = (self.player.hitbox.left - self.rect.left, self.player.hitbox.top - self.rect.top)
+
+            if mask.overlap(pygame.mask.Mask(self.player.hitbox.size, True), offset):
+                self.player.damage(1)
 
     def update(self, dt):
-        print(self.bat)
         if not self.charge_timer > 0.15 or not self.bat.alive():
             self.kill()
 
-        self.animate(dt)
+        self.animate()
         self.charge_timer -= dt

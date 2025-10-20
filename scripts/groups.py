@@ -1,17 +1,19 @@
 from settings import *
 
-class AllSprites(pygame.sprite.Group):
+class AllSprites(pygame.sprite.LayeredUpdates):
     def __init__(self):
         super().__init__()
         self.display_surface = pygame.display.get_surface()
         self.offset = pygame.Vector2()
 
     def draw(self, target_pos):
-        self.offset = - target_pos + pygame.Vector2(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
+        self.offset = -target_pos + pygame.Vector2(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
 
-        ground_sprites = [sprite for sprite in self if hasattr(sprite, 'ground')]
-        object_sprites = [sprite for sprite in self if not hasattr(sprite, 'ground')]
+        # Group sprites by layer
+        layers = {}
+        for sprite in self.sprites():
+            layers.setdefault(sprite._layer, []).append(sprite)
 
-        for layer in [ground_sprites, object_sprites]:
-            for sprite in sorted(layer, key=lambda sprite: sprite.hitbox.top):
+        for layer in sorted(layers.keys()):
+            for sprite in sorted(layers[layer], key=lambda s: s.hitbox.bottom):
                 self.display_surface.blit(sprite.image, sprite.rect.topleft + self.offset)

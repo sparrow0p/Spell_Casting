@@ -38,8 +38,13 @@ class Player(pygame.sprite.Sprite):
         self.coyote_time_cast_max = 0.18
         self.spell_list = []
         self.is_drawing = False
-        self.spall_line = SpellLine
-        self.spell_lines = []
+        self.spell_line = SpellLine(self, self.groups)
+        self.fast_wind_speed_mult = 1.8
+        self.is_fast_wind = False
+        self.fast_wind_effects = []
+        self.health = 5
+        self.i_frame_timer = 0
+        self.i_frame_timer_max = 0.5
 
     def load_images(self):
         folders = list(walk(join('images', 'player')))[0][1]
@@ -108,10 +113,28 @@ class Player(pygame.sprite.Sprite):
                     else:
                         self.state = 'idle_r' if self.last_run_dir == 'right' else 'idle_l'
 
+            case 'dead':
+                pass
+
+    def damage(self, damage_val, kb_strength=None, kb_dir=None):
+        if self.state != 'dead' and not self.i_frame_timer > 0:
+            self.i_frame_timer = self.i_frame_timer_max
+            self.health -= damage_val
+
+            if not self.health > 0:
+                self.state = 'dead'
+                self.cast_fail()
+                self.frame_index = 0
+
     def move(self, dt):
+        if self.state == 'dead':
+            return
+
         if not self.is_dashing:
             if self.is_drawing:
                 self.vel = pygame.Vector2()
+                if self.is_dashing_old:
+                    self.spell_line.stop_drawing()
             elif self.is_dashing_old:
                 self.vel = self.vel.normalize() * self.run_speed
             elif self.direction == (0, 0):
@@ -121,23 +144,26 @@ class Player(pygame.sprite.Sprite):
         else:
             self.vel = self.vel.lerp(self.dash_dir * self.dash_speed, min(self.dash_accel * dt, 1))
 
-        self.pos.x += self.vel.x * dt
+        self.pos.x += self.vel.x * dt if not self.is_fast_wind else self.fast_wind_speed_mult * self.vel.x * dt
         self.rect.centerx = round(self.pos.x)
         self.hitbox.centerx = round(self.pos.x)
         self.collision('horizontal')
-        self.pos.y += self.vel.y * dt
+        self.pos.y += self.vel.y * dt if not self.is_fast_wind else self.fast_wind_speed_mult * self.vel.y * dt
         self.rect.bottom = round(self.pos.y) + 0.125 * PLAYER_SIZE
         self.hitbox.centery = round(self.pos.y)
         self.collision('vertical')
 
     def set_coyote_time_dash(self):
+        if self.state == 'dead':
+            return
         self.coyote_time_dash = self.coyote_time_dash_max
 
     def dash(self, dt):
         self.is_dashing_old = self.is_dashing
 
         if self.direction and not self.is_dashing and self.coyote_time_dash > 0:
-            self.dash_timer = self.dash_timer_max
+            self.coyote_time_dash = 0
+            self.dash_timer = self.dash_timer_max if not self.is_fast_wind else self.dash_timer_max / self.fast_wind_speed_mult
             self.dash_dir = self.direction
             self.dash_dir_int = math.atan2(self.direction.y, self.direction.x) % (2 * math.pi) * 4 / math.pi
             if not self.spell_list:
@@ -146,7 +172,7 @@ class Player(pygame.sprite.Sprite):
                 self.spell_list.append((self.dash_dir_int - self.spell_list[0]) % 8)
             self.is_dashing = True
             self.is_drawing = True
-            self.spell_lines.append(SpellLine(self.pos, self.groups, self, self.dash_dir_int))
+            self.spell_line.start_drawing()
 
         if self.dash_timer > 0:
             self.dash_timer -= dt
@@ -162,13 +188,13 @@ class Player(pygame.sprite.Sprite):
     def try_casting(self, dt):
         if self.spell_list and self.coyote_time_cast > 0 and not self.is_dashing:
             self.coyote_time_cast = 0
-            if self.cast():
-                self.spell_list = []
-                self.is_drawing = False
-                for line in self.spell_lines:
-                    line.kill()
-            else:
-                self.cast_fail()
+            self.is_fast_wind = False
+            for fwe in self.fast_wind_effects:
+                fwe.kill()
+            self.cast()
+            self.spell_list = []
+            self.is_drawing = False
+            self.spell_line.clear_all()
 
         if self.coyote_time_cast > 0:
             self.coyote_time_cast -= dt
@@ -178,10 +204,15 @@ class Player(pygame.sprite.Sprite):
         self.spell_list.pop(0)
         match self.spell_list:
             case []:
-                ShootingStar(self.pos, self.dash_dir, self.groups, self.enemy_sprites, self, self.collision_sprites)
+                shooting_star = ShootingStar(self.pos, self.dash_dir, self.groups, self.enemy_sprites, self, self.collision_sprites)
+                shooting_star._layer = 11
                 return 'falling_star'
             case [0]:
-                print("fast_win")
+                self.is_fast_wind = True
+                for i in (24, 12, 9):
+                    fwe = FastWindEffect(self.rect.center + pygame.Vector2(0, -1), i, self, self.groups)
+                    fwe._layer = 13
+                    self.fast_wind_effects.append(fwe)
                 return 'fast_wind'
             case[4]:
                 if spell_dir in (0, 2, 4, 6):
@@ -189,10 +220,13 @@ class Player(pygame.sprite.Sprite):
                     return 'stone_wall'
 
     def cast_fail(self):
+        self.coyote_time_dash = 0
         self.spell_list = []
         self.is_drawing = False
-        for line in self.spell_lines:
-            line.kill()
+        self.spell_line.clear_all()
+        self.is_fast_wind = False
+        for fwe in self.fast_wind_effects:
+            fwe.kill()
 
     def collision(self, direction):
         for sprite in self.collision_sprites:
@@ -220,8 +254,21 @@ class Player(pygame.sprite.Sprite):
                 self.frame_index += 5 * dt
             case 'dash_idle_r' | 'dash_idle_l':
                 self.frame_index += 2 * dt
+            case 'dead':
+                if self.frame_index < len(self.frames[self.state]) - 1:
+                    self.frame_index += 12 * dt
 
         self.image = self.frames[self.state][int(self.frame_index) % len(self.frames[self.state])]
+        if self.i_frame_timer > self.i_frame_timer_max * 0.8:
+            mask = pygame.mask.from_surface(self.image)
+            mask_surf = mask.to_surface()
+            mask_surf.set_colorkey((0, 0, 0))
+            surf_w, surf_h = mask_surf.get_size()
+            for x in range(surf_h):
+                for y in range(surf_w):
+                    if mask_surf.get_at((x, y))[0] == 255:
+                        mask_surf.set_at((x, y), (230, 30, 30))
+            self.image = mask_surf
 
     def update(self, dt):
         self.input()
@@ -230,3 +277,6 @@ class Player(pygame.sprite.Sprite):
         self.try_casting(dt)
         self.change_state()
         self.animate(dt)
+
+        if self.i_frame_timer > 0:
+            self.i_frame_timer -= dt

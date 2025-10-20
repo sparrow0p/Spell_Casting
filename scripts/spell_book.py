@@ -1,7 +1,6 @@
-import pygame_particles
+import pygame
 
 from settings import *
-from pygame_particles import examples
 
 class ShootingStar(pygame.sprite.Sprite):
     def __init__(self, pos, dir, groups, enemy_sprites, player, collision_sprites):
@@ -16,8 +15,8 @@ class ShootingStar(pygame.sprite.Sprite):
         self.hitbox = self.rect
         self.collision_sprites = collision_sprites
         self.pos = self.rect.center
-        self.speed = 2000
-        self.min_speed = 200
+        self.speed = 2500
+        self.min_speed = 150
         self.decel = 35
         self.fly_timer = 0.5
         self.explosion_timer = 0.1
@@ -62,7 +61,7 @@ class ShootingStar(pygame.sprite.Sprite):
                 pass
 
     def set_explosion_image(self):
-        radius = 200
+        radius = 150
         explosion_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(explosion_surface, (255, 0, 0, 90), (radius, radius), radius)
 
@@ -71,7 +70,6 @@ class ShootingStar(pygame.sprite.Sprite):
         self.hitbox = self.rect
 
     def collision(self):
-        # collided_sprites = pygame.sprite.spritecollide(self, self.collision_sprites, False)
         for sprite in self.enemy_sprites:
             if sprite.hitbox.colliderect(self.hitbox):
                 return sprite
@@ -87,3 +85,42 @@ class ShootingStar(pygame.sprite.Sprite):
         self.animate()
         self.update_timer(dt)
         self.change_state()
+
+class FastWindEffect(pygame.sprite.Sprite):
+    def __init__(self, pos, follow_strength, player, groups):
+        super().__init__(groups)
+        self.follow_strength = follow_strength
+        self.player = player
+        self.animate()
+        self.rect = self.image.get_rect(center=pos)
+        self.hitbox = self.rect
+        self.pos = pygame.Vector2(self.rect.center)
+        self.vel = pygame.Vector2()
+        self.image_timer_max = 0.2 + follow_strength / 100
+        self.image_timer = self.image_timer_max
+
+    def move(self, dt):
+        self.vel = self.vel.lerp(self.player.rect.center - self.pos + pygame.Vector2(0, -1), 1)
+        self.pos += self.vel * self.follow_strength * dt
+        self.rect.center = (round(self.pos.x), round(self.pos.y))
+        self.hitbox = self.rect
+
+    def animate(self):
+        image = self.player.image
+        mask = pygame.mask.from_surface(image)
+        outline = mask.outline()
+        mask_surf = mask.to_surface()
+        mask_surf.set_colorkey((0, 0, 0))
+        for point in outline:
+            mask_surf.set_at(point, (0, 0, 1))
+        mask_surf.set_alpha(90)
+
+        self.image = mask_surf
+
+    def update(self, dt):
+        self.move(dt)
+        if self.image_timer > 0:
+            self.image_timer -= dt
+        else:
+            self.animate()
+            self.image_timer = self.image_timer_max
