@@ -61,7 +61,7 @@ class SpellLinePolygon(pygame.sprite.Sprite):
         self.is_first_line = is_first_line
         self.max_size = self.player.dash_speed * self.player.dash_timer_max
         self.image = pygame.Surface((4 * self.max_size, 4 * self.max_size), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(center=self.player.pos.copy())
+        self.rect = self.image.get_rect(center=self.player.pos)
         self.hitbox = self.rect
         self.start_pos = self.rect.center
         self.end_pos = self.rect.center

@@ -1,6 +1,7 @@
+from settings import *
 from spell_line import SpellLine
 from spell_book import *
-from settings import *
+from particles import ParticleEmitter, DashParticle
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups, enemy_sprites, collision_sprites):
@@ -45,6 +46,7 @@ class Player(pygame.sprite.Sprite):
         self.health = 5
         self.i_frame_timer = 0
         self.i_frame_timer_max = 0.5
+        self.dash_particle_emitter = pygame.sprite.Sprite()
 
     def load_images(self):
         folders = list(walk(join('images', 'player')))[0][1]
@@ -125,6 +127,7 @@ class Player(pygame.sprite.Sprite):
                 self.state = 'dead'
                 self.cast_fail()
                 self.frame_index = 0
+                self.vel = pygame.Vector2()
 
     def move(self, dt):
         if self.state == 'dead':
@@ -173,11 +176,14 @@ class Player(pygame.sprite.Sprite):
             self.is_dashing = True
             self.is_drawing = True
             self.spell_line.start_drawing()
+            self.dash_particle_emitter = ParticleEmitter(self.groups, self.pos, -self.dash_dir, DashParticle, 0.005)
 
         if self.dash_timer > 0:
             self.dash_timer -= dt
+            self.dash_particle_emitter.pos = self.hitbox.center
         else:
             self.is_dashing = False
+            self.dash_particle_emitter.kill()
 
         if self.coyote_time_dash > 0:
             self.coyote_time_dash -= dt
