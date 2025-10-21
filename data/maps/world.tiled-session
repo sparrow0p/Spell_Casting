@@ -1,8 +1,8 @@
 {
     "activeFile": "world.tmx",
     "expandedProjectPaths": [
-        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data",
         "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data",
         "."
     ],
     "fileStates": {
@@ -13,7 +13,7 @@
         },
         "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Ground.tsx": {
             "dynamicWrapping": false,
-            "scaleInDock": 1,
+            "scaleInDock": 0.75,
             "scaleInEditor": 3
         },
         "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Plant.tsx": {
@@ -34,8 +34,8 @@
             "scale": 1,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 471,
-                "y": 296.5
+                "x": 483,
+                "y": 267.5
             }
         }
     },

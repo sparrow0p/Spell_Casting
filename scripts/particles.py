@@ -1,7 +1,7 @@
 import pygame.sprite
 
 from settings import *
-from random import random, uniform
+from random import random, randint, uniform
 
 class ParticleEmitter(pygame.sprite.Sprite):
     def __init__(self, groups, pos, dir, particle, cooldown_timer_max=0.1, amount=1, one_shot=False):
@@ -23,32 +23,67 @@ class ParticleEmitter(pygame.sprite.Sprite):
             self.cooldown_timer -= dt
         else:
             for i in range(self.amount):
-                particle = self.particle(self.groups, self.pos, self.dir)
+                particle = self.particle(self.groups, self.pos)
                 particle._layer = 13
             self.cooldown_timer = self.cooldown_timer_max
 
 class BaseParticle(pygame.sprite.Sprite):
-    def __init__(self, groups, pos: pygame.Vector2, life_timer=2.0, fade_timer=1.0, image=pygame.Surface((0, 0)),
-                 size=(10.0, 10.0), dir=pygame.Vector2(), dir_angle_range=0.0, start_speed_range=(0.0, 0.0),
-                 end_speed_range=(0.0, 0.0), accel_range=(0.0, 0.0), start_rot_range=(0.0, 0.0),
-                 start_rot_speed_range=(0.0, 0.0), end_rot_speed_range=(0.0, 0.0), rot_accel_range=(0.0, 0.0)):
+    def __init__(self, groups, pos: pygame.Vector2, life_timer=2.0, fade_timer=-1.0, image=pygame.Surface((0, 0)),
+                 size=(10.0, 10.0), start_colour_range=((0, 0, 0, 0), (0, 0, 0, 0)), end_colour_range=((0, 0, 0, 0), (0, 0, 0, 0)),
+                 dir=pygame.Vector2(), dir_angle_range=0.0, start_speed_range=(0.0, 0.0), end_speed_range=(0.0, 0.0),
+                 accel_range=(0.0, 0.0), start_rot_range=(0.0, 0.0), start_rot_speed_range=(0.0, 0.0),
+                 end_rot_speed_range=(0.0, 0.0), rot_accel_range=(0.0, 0.0)):
         super().__init__(groups)
         self.pos = pos
-        self.life_timer = life_timer
+        self.life_timer_max = life_timer
+        self.life_timer = self.life_timer_max
         self.fade_timer = fade_timer
-        self.image = image
-        self.image = pygame.transform.scale(self.image, size)
+        self.org_image = image
+        self.org_image = pygame.transform.scale(self.org_image, size)
+        self.start_color = pygame.Color((0, 0, 0))
+        self.start_color.hsla = self.randcolor(start_colour_range)
+        self.color = self.start_color
+        self.end_color = pygame.Color((0, 0, 0))
+        self.end_color.hsla = self.randcolor(end_colour_range)
         self.dir = dir.rotate((2 * random() - 1) * dir_angle_range)
         self.speed = uniform(start_speed_range[0], start_speed_range[1])
         self.end_speed = uniform(end_speed_range[0], end_speed_range[1])
         self.accel = uniform(accel_range[0], accel_range[1])
-        self.image = pygame.transform.rotate(self.image, uniform(start_rot_range[0], start_rot_range[1]))
+        self.org_image = pygame.transform.rotate(self.org_image, uniform(start_rot_range[0], start_rot_range[1]))
         self.rot_speed = uniform(start_rot_speed_range[0], start_rot_speed_range[1])
         self.end_rot_speed = uniform(end_rot_speed_range[0], end_rot_speed_range[1])
         self.rot_accel = uniform(rot_accel_range[0], rot_accel_range[1])
+        self.image = self.org_image
         self.rect = self.image.get_rect(center=self.pos)
         self.hitbox = self.rect
         self.vel = self.dir * self.speed
+
+        if self.color[3] != 0:
+            self.set_color(self.color)
+
+    def randcolor(self, color_range):
+        color = []
+        for i in range(4):
+            color.append(randint(color_range[0][i], color_range[1][i]))
+        return color
+
+    def set_color(self, color):
+        self.rect = self.image.get_rect()
+        color_image = pygame.Surface(self.image.get_size()).convert_alpha()
+        color_image.fill(color)
+        self.image.blit(color_image, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+    def update_color(self):
+        color_rgb = []
+        for i in range(4):
+            color_rgb.append(sorted((self.start_color[i] + int((1 - self.life_timer / self.life_timer_max) * (self.end_color[i] - self.start_color[i])), 0, 255))[1])
+        print(color_rgb)
+        color = pygame.Color(color_rgb)
+        self.rect = self.image.get_rect()
+        color_image = pygame.Surface(self.image.get_size()).convert_alpha()
+        color_image.fill(color)
+        self.image = self.org_image.copy()
+        self.image.blit(color_image, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
     def move(self, dt):
         self.vel = self.vel.lerp(self.dir * self.end_speed, min(self.accel * dt, 1))
@@ -62,31 +97,34 @@ class BaseParticle(pygame.sprite.Sprite):
         else:
             self.kill()
 
+        if self.end_color != self.color:
+            self.update_color()
+
         self.move(dt)
 
         if self.fade_timer > self.life_timer:
             self.image.set_alpha(int(100 * self.life_timer / self.fade_timer))
 
 class DashParticle(BaseParticle):
-    def __init__(self, groups, pos, dir):
-        size = 15
-        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    def __init__(self, groups, pos):
+        self.size = 16
+        self.image = pygame.image.load(join('images', 'effects', 'dash_particles', f'{randint(1, 15)}.png')).convert_alpha()
+        self.image.set_alpha(200)
         super().__init__(
             groups,
             pos,
-            life_timer=0.5,
-            fade_timer=0.1,
-            image=self.make_regular_polygon(5, uniform(0, math.pi * 2), size / 2, surf, (96, 0, 96)),
-            size=(size, size),
-            dir=dir,
-            dir_angle_range=30,
-            start_speed_range=(500, 600),
+            life_timer=0.2,
+            fade_timer=0.02,
+            image=self.image,
+            size=(self.size, self.size),
+            start_colour_range=((0, 0, 100, 100), (0, 10, 100, 100)),
+            end_colour_range=((0, 10, 100, 100), (0, 10, 100, 100)),
+            dir=pygame.Vector2(0, -1),
+            dir_angle_range=45,
+            start_speed_range=(120, 400),
             end_speed_range=(100, 120),
             accel_range=(10, 15),
-            start_rot_range=(0, 360),
-            start_rot_speed_range=(0, 0),
-            end_rot_speed_range=(0, 0),
-            rot_accel_range=(0, 0)
+            start_rot_range=(0, 360)
         )
 
     def make_regular_polygon(self, side_num, angle, radius, surf, color):
