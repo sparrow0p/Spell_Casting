@@ -176,7 +176,7 @@ class Player(pygame.sprite.Sprite):
             self.is_dashing = True
             self.is_drawing = True
             self.spell_line.start_drawing()
-            self.dash_particle_emitter = ParticleEmitter(self.groups, self.pos, -self.dash_dir, DashParticle, 0.005)
+            self.dash_particle_emitter = ParticleEmitter(self.groups, self.pos, DashParticle, cooldown_timer_max=0.005)
 
         if self.dash_timer > 0:
             self.dash_timer -= dt
@@ -211,7 +211,7 @@ class Player(pygame.sprite.Sprite):
         match self.spell_list:
             case []:
                 shooting_star = ShootingStar(self.pos, self.dash_dir, self.groups, self.enemy_sprites, self, self.collision_sprites)
-                shooting_star._layer = 11
+                shooting_star._layer = 0
                 return 'falling_star'
             case [0]:
                 self.is_fast_wind = True
@@ -222,7 +222,8 @@ class Player(pygame.sprite.Sprite):
                 return 'fast_wind'
             case[4]:
                 if spell_dir in (0, 2, 4, 6):
-                    print('stone_wall')
+                    rock_wall = RockWall((self.groups, self.collision_sprites), self.pos.copy(), self.dash_dir)
+                    rock_wall._layer = 13
                     return 'stone_wall'
 
     def cast_fail(self):

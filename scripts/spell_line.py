@@ -3,7 +3,7 @@ import pygame
 from settings import *
 
 S_GIRTH = 4
-E_GIRTH = 12
+E_GIRTH = 16
 
 class SpellLine(pygame.sprite.Sprite):
     def __init__(self, player, groups):
@@ -75,6 +75,9 @@ class SpellLinePolygon(pygame.sprite.Sprite):
         self.is_growing = False
 
     def update(self, dt):
+        if self.dir == (0, 0):
+            return
+
         mask = pygame.Surface((self.max_size, self.max_size), pygame.SRCALPHA)
         mask.fill((0, 0, 0, 0))
 

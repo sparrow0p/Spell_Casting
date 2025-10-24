@@ -1,3 +1,5 @@
+import pygame
+
 from settings import *
 
 class AllSprites(pygame.sprite.LayeredUpdates):
@@ -16,4 +18,6 @@ class AllSprites(pygame.sprite.LayeredUpdates):
 
         for layer in sorted(layers.keys()):
             for sprite in sorted(layers[layer], key=lambda s: s.hitbox.bottom):
+                # if sprite.__class__.__name__ == "FireParticle":
+                #     self.display_surface.blit(sprite.image, sprite.rect.topleft + self.offset, special_flags=pygame.BLEND_ADD)
                 self.display_surface.blit(sprite.image, sprite.rect.topleft + self.offset)

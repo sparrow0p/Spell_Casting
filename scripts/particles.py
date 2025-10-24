@@ -4,7 +4,7 @@ from settings import *
 from random import random, randint, uniform
 
 class ParticleEmitter(pygame.sprite.Sprite):
-    def __init__(self, groups, pos, dir, particle, cooldown_timer_max=0.1, amount=1, one_shot=False):
+    def __init__(self, groups, pos, particle, dir=pygame.Vector2(0, 0), cooldown_timer_max=0.1, amount=1, one_shot=False):
         super().__init__(groups)
         self.groups = groups
         self.image = pygame.Surface((0, 0))
@@ -23,12 +23,15 @@ class ParticleEmitter(pygame.sprite.Sprite):
             self.cooldown_timer -= dt
         else:
             for i in range(self.amount):
-                particle = self.particle(self.groups, self.pos)
+                particle = self.particle(self.groups, self.pos, self.dir)
                 particle._layer = 13
             self.cooldown_timer = self.cooldown_timer_max
 
+        if self.one_shot:
+            self.kill()
+
 class BaseParticle(pygame.sprite.Sprite):
-    def __init__(self, groups, pos: pygame.Vector2, life_timer=2.0, fade_timer=-1.0, image=pygame.Surface((0, 0)),
+    def __init__(self, groups, pos: pygame.Vector2, life_timer=2.0, fade_timer=-1.0, image=pygame.Surface((0, 0), pygame.SRCALPHA),
                  size=(10.0, 10.0), start_colour_range=((0, 0, 0, 0), (0, 0, 0, 0)), end_colour_range=((0, 0, 0, 0), (0, 0, 0, 0)),
                  dir=pygame.Vector2(), dir_angle_range=0.0, start_speed_range=(0.0, 0.0), end_speed_range=(0.0, 0.0),
                  accel_range=(0.0, 0.0), start_rot_range=(0.0, 0.0), start_rot_speed_range=(0.0, 0.0),
@@ -53,7 +56,7 @@ class BaseParticle(pygame.sprite.Sprite):
         self.rot_speed = uniform(start_rot_speed_range[0], start_rot_speed_range[1])
         self.end_rot_speed = uniform(end_rot_speed_range[0], end_rot_speed_range[1])
         self.rot_accel = uniform(rot_accel_range[0], rot_accel_range[1])
-        self.image = self.org_image
+        self.image = self.org_image.copy()
         self.rect = self.image.get_rect(center=self.pos)
         self.hitbox = self.rect
         self.vel = self.dir * self.speed
@@ -69,7 +72,7 @@ class BaseParticle(pygame.sprite.Sprite):
 
     def set_color(self, color):
         self.rect = self.image.get_rect()
-        color_image = pygame.Surface(self.image.get_size()).convert_alpha()
+        color_image = pygame.Surface(self.image.get_size())
         color_image.fill(color)
         self.image.blit(color_image, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
@@ -77,10 +80,9 @@ class BaseParticle(pygame.sprite.Sprite):
         color_rgb = []
         for i in range(4):
             color_rgb.append(sorted((self.start_color[i] + int((1 - self.life_timer / self.life_timer_max) * (self.end_color[i] - self.start_color[i])), 0, 255))[1])
-        print(color_rgb)
         color = pygame.Color(color_rgb)
         self.rect = self.image.get_rect()
-        color_image = pygame.Surface(self.image.get_size()).convert_alpha()
+        color_image = pygame.Surface(self.image.get_size())
         color_image.fill(color)
         self.image = self.org_image.copy()
         self.image.blit(color_image, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
@@ -106,13 +108,13 @@ class BaseParticle(pygame.sprite.Sprite):
             self.image.set_alpha(int(100 * self.life_timer / self.fade_timer))
 
 class DashParticle(BaseParticle):
-    def __init__(self, groups, pos):
+    def __init__(self, groups, pos, dir):
         self.size = 16
         self.image = pygame.image.load(join('images', 'effects', 'dash_particles', f'{randint(1, 15)}.png')).convert_alpha()
         self.image.set_alpha(200)
         super().__init__(
-            groups,
-            pos,
+            groups=groups,
+            pos=pos,
             life_timer=0.2,
             fade_timer=0.02,
             image=self.image,
@@ -135,3 +137,44 @@ class DashParticle(BaseParticle):
             points.append([int(x), int(y)])
         pygame.draw.polygon(surf, color, points)
         return surf
+
+class ShootingStarFlyParticle(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'effects', 'shooting_star', 'fly', '0.png')).convert_alpha()
+        start_rot_range = 90 - math.atan2(dir[1], dir[0]) % (2 * math.pi) * 180 / math.pi
+        super().__init__(
+            groups=groups,
+            pos=pos,
+            life_timer=0.3,
+            fade_timer=0.1,
+            image=self.image,
+            size=(16, 32),
+            start_colour_range=((270, 100, 80, 100), (280, 100, 90, 100)),
+            end_colour_range=((250, 100, 50, 100), (260, 100, 60, 100)),
+            dir=dir,
+            dir_angle_range=90,
+            start_speed_range=(50, 60),
+            end_speed_range=(50, 60),
+            accel_range=(10, 15),
+            start_rot_range=(start_rot_range, start_rot_range)
+        )
+
+class ShootingStarExplodeParticle(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'effects', 'shooting_star', 'explode', '0.png')).convert_alpha()
+        self.dir = pygame.math.Vector2(uniform(-1, 1), uniform(-1, 1)).normalize()
+        randpos = random() * 128
+        super().__init__(
+            groups=groups,
+            pos=pos + self.dir * randpos,
+            life_timer=0.5 + random() * 0.3,
+            fade_timer=0.3,
+            image=self.image,
+            size=(32 + 48 - randpos / 3, 32 + 48 - randpos / 3),
+            start_colour_range=((10, 100, 50, 100), (20, 100, 60, 100)),
+            end_colour_range=((20, 100, 5, 100), (20, 100, 10, 100)),
+            dir=self.dir,
+            start_speed_range=(40, 50),
+            end_speed_range=(0, 10),
+            accel_range=(3, 5),
+        )

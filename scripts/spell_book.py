@@ -1,10 +1,12 @@
 import pygame
 
 from settings import *
+from particles import ParticleEmitter, ShootingStarFlyParticle, ShootingStarExplodeParticle
 
 class ShootingStar(pygame.sprite.Sprite):
     def __init__(self, pos, dir, groups, enemy_sprites, player, collision_sprites):
         super().__init__(groups)
+        self.groups = groups
         self.enemy_sprites = enemy_sprites
         self.player = player
         self.dir = dir.normalize()
@@ -14,12 +16,13 @@ class ShootingStar(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
         self.hitbox = self.rect
         self.collision_sprites = collision_sprites
-        self.pos = self.rect.center
+        self.pos = pygame.Vector2(self.rect.center)
         self.speed = 2500
         self.min_speed = 150
-        self.decel = 35
+        self.decel = 10000
         self.fly_timer = 0.5
         self.explosion_timer = 0.1
+        self.particle_emitter = ParticleEmitter(self.groups, self.pos.copy(), ShootingStarFlyParticle, -self.dir, 0.005)
 
     def move(self, dt):
         if self.fly_timer > 0:
@@ -27,9 +30,10 @@ class ShootingStar(pygame.sprite.Sprite):
 
         self.rect.center = (round(self.pos.x), round(self.pos.y))
         self.hitbox.center = self.rect.center
+        self.particle_emitter.pos = self.pos.copy()
 
         if self.speed > self.min_speed:
-            self.speed -= self.decel
+            self.speed -= self.decel * dt
             if self.speed < self.min_speed:
                 self.speed = self.min_speed
 
@@ -57,6 +61,8 @@ class ShootingStar(pygame.sprite.Sprite):
                     self.fly_timer = 0
                     self.state = 'explode'
                     self.set_explosion_image()
+                    self.particle_emitter.kill()
+                    self.particle_emitter = ParticleEmitter(self.groups, self.pos.copy(), ShootingStarExplodeParticle, amount=100, one_shot=True)
             case 'explode':
                 pass
 
@@ -124,3 +130,24 @@ class FastWindEffect(pygame.sprite.Sprite):
         else:
             self.animate()
             self.image_timer = self.image_timer_max
+
+class RockWall(pygame.sprite.Sprite):
+    def __init__(self, groups, pos, dir):
+        super().__init__(groups)
+        self.pos = pos
+        self.dir = dir
+        self.horizontal = True if self.dir.y != 0 else False
+        self.s_mult = 1.5
+        if self.horizontal:
+            self.image = pygame.image.load(join('images', 'spells', f'rock_wall_horizontal.png')).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (2 * self.s_mult * TILE_SIZE, 2 * self.s_mult * TILE_SIZE))
+        else:
+            self.image = pygame.image.load(join('images', 'spells', f'rock_wall_vertical.png')).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.s_mult * TILE_SIZE, 3 * self.s_mult * TILE_SIZE))
+        self.rect = self.image.get_rect(center=pos)
+        self.hitbox = pygame.Rect(0, 0, self.s_mult * 120, self.s_mult * 56) if self.horizontal else pygame.Rect(0, 0, self.s_mult * 56, self.s_mult * 120)
+        self.hitbox.midbottom = self.rect.midbottom
+        self.hitbox.bottom -= self.s_mult * 20
+        self.pos = self.hitbox.midtop
+        self.rect.center = self.pos
+        self.hit_timer = 1
