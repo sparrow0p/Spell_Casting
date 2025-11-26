@@ -18,9 +18,10 @@ class Game:
         self.running = True
 
         # groups
-        self.all_sprites = AllSprites()
         self.collision_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
+        self.ui_sprites = pygame.sprite.Group()
+        self.all_sprites = AllSprites(self.ui_sprites)
 
         # enemy timer
         self.enemy_event = pygame.event.custom_type()
@@ -54,7 +55,7 @@ class Game:
 
         for obj in map.get_layer_by_name('Entities'):
             if obj.name == 'Player':
-                self.player = Player((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y), self.all_sprites, self.enemy_sprites, self.collision_sprites)
+                self.player = Player(self.all_sprites, self.collision_sprites, self.ui_sprites, self.enemy_sprites, (WORLD_SCALE * obj.x, WORLD_SCALE * obj.y))
                 self.player._layer = 13
             elif obj.name == 'Enemy':
                 self.spawn_positions.append((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y))

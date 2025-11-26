@@ -1,7 +1,10 @@
 import pygame
 
 from settings import *
-from particles import ParticleEmitter, ShootingStarFlyParticle, ShootingStarExplodeParticle
+from particles import ParticleEmitter, ShootingStarFlyParticle, ShootingStarExplodeParticle, HealingParticle
+from components import apply_damage
+from re import sub
+from random import randrange
 
 class ShootingStar(pygame.sprite.Sprite):
     def __init__(self, pos, dir, groups, enemy_sprites, player, collision_sprites):
@@ -12,17 +15,22 @@ class ShootingStar(pygame.sprite.Sprite):
         self.dir = dir.normalize()
         self.state, self.frame_index = 'fly', 0
         self.image = pygame.Surface((20, 20))
-        self.image.fill((0, 0, 255))
         self.rect = self.image.get_rect(center=pos)
         self.hitbox = self.rect
         self.collision_sprites = collision_sprites
         self.pos = pygame.Vector2(self.rect.center)
         self.speed = 2500
         self.min_speed = 150
-        self.decel = 10000
+        self.decel = 8000
         self.fly_timer = 0.5
         self.explosion_timer = 0.1
         self.particle_emitter = ParticleEmitter(self.groups, self.pos.copy(), ShootingStarFlyParticle, -self.dir, 0.005)
+        self.particle_emitter._layer = 13
+        self.radius = 120
+        self.explosion_surface = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
+        self.explosion_surface.fill((0, 0, 0, 0))
+        pygame.draw.circle(self.explosion_surface, (255, 0, 0), (self.radius, self.radius), self.radius)
+        self.mask = pygame.mask.from_surface(self.explosion_surface)
 
     def move(self, dt):
         if self.fly_timer > 0:
@@ -38,15 +46,18 @@ class ShootingStar(pygame.sprite.Sprite):
                 self.speed = self.min_speed
 
     def explosion(self):
-        sprite = self.collision()
-        if isinstance(sprite, pygame.sprite.Sprite):
-            sprite.kill()
+        for sprite in self.enemy_sprites:
+            if sprite.hitbox.colliderect(self.hitbox):
+                offset = (sprite.hitbox.left - self.hitbox.left, sprite.hitbox.top - self.hitbox.top)
+                if self.mask.overlap(pygame.mask.Mask(sprite.hitbox.size, True), offset):
+                    apply_damage(sprite, 1, 200, sprite.pos - self.pos, 20)
 
-    def animate(self):
-        if self.fly_timer > 0:
-            pygame.Surface.fill(self.image, (0, 0, 255))
+        if self.player.hitbox.colliderect(self.hitbox):
+            offset = (self.player.hitbox.left - self.hitbox.left, self.player.hitbox.top - self.hitbox.top)
+            if self.mask.overlap(pygame.mask.Mask(self.player.hitbox.size, True), offset):
+                self.player.damage(0, 500, self.player.pos - self.pos, 50, True)
 
-    def update_timer(self, dt):
+    def update_timers(self, dt):
         if self.fly_timer > 0:
             self.fly_timer -= dt
         elif self.explosion_timer > 0:
@@ -60,36 +71,30 @@ class ShootingStar(pygame.sprite.Sprite):
                 if self.fly_timer < 0 or self.collision():
                     self.fly_timer = 0
                     self.state = 'explode'
-                    self.set_explosion_image()
+                    self.rect = self.explosion_surface.get_rect(center=self.rect.center)
+                    self.hitbox = self.rect
                     self.particle_emitter.kill()
                     self.particle_emitter = ParticleEmitter(self.groups, self.pos.copy(), ShootingStarExplodeParticle, amount=100, one_shot=True)
+                    self.particle_emitter._layer = 13
             case 'explode':
                 pass
 
-    def set_explosion_image(self):
-        radius = 150
-        explosion_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
-        pygame.draw.circle(explosion_surface, (255, 0, 0, 90), (radius, radius), radius)
-
-        self.image = explosion_surface
-        self.rect = self.image.get_rect(center=self.rect.center)
-        self.hitbox = self.rect
-
     def collision(self):
         for sprite in self.enemy_sprites:
-            if sprite.hitbox.colliderect(self.hitbox):
-                return sprite
+            if sprite.rect.colliderect(self.hitbox):
+                return True
 
         for sprite in self.collision_sprites:
             if sprite.hitbox.colliderect(self.hitbox):
                 return True
 
+        return False
+
     def update(self, dt):
         self.move(dt)
         if self.state == 'explode':
             self.explosion()
-        self.animate()
-        self.update_timer(dt)
+        self.update_timers(dt)
         self.change_state()
 
 class FastWindEffect(pygame.sprite.Sprite):
@@ -132,22 +137,178 @@ class FastWindEffect(pygame.sprite.Sprite):
             self.image_timer = self.image_timer_max
 
 class RockWall(pygame.sprite.Sprite):
-    def __init__(self, groups, pos, dir):
+    def __init__(self, groups, enemy_sprites, pos, dir):
         super().__init__(groups)
+        self.enemy_sprites = enemy_sprites
+        self.frames = []
+        self.load_images()
+        self.image = pygame.image.load(join('images', 'spells', 'rock_pillar', 'rock_pillar0.png')).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (3 * TILE_SIZE, 3.5 * TILE_SIZE))
+        self.frame_index = 0
+        self.dir = dir
+        self.pos = pos + pygame.Vector2(2.5 * dir.x * TILE_SIZE, 2.25 * dir.y * TILE_SIZE - 0.5 * TILE_SIZE)
+        self.rect = self.image.get_rect(center=self.pos)
+        self.hitbox = pygame.Rect(0, 0, 3 * TILE_SIZE, 2.5 * TILE_SIZE)
+        self.hitbox.midbottom = self.rect.midbottom
+        self.hitbox = self.hitbox.inflate((-0.3 * TILE_SIZE, -0.5 * TILE_SIZE))
+        self.rect.center = self.pos
+        self.hit_timer = 0.1
+
+    def load_images(self):
+        for folder_path, _, file_names in walk(join('images', 'spells', 'rock_pillar')):
+            for file_name in sorted(file_names, key=lambda name: int(sub(f'[^0-9]', '', name))):
+                full_path = join(folder_path, file_name)
+                surf = pygame.image.load(full_path).convert_alpha()
+                surf = pygame.transform.scale(surf, (3 * TILE_SIZE, 3.5 * TILE_SIZE))
+                self.frames.append(surf)
+
+    def hit(self):
+        for sprite in self.enemy_sprites:
+            if sprite.hitbox.colliderect(self.hitbox):
+                sprite.kill()
+
+    def animate(self, dt):
+        if self.frame_index < len(self.frames) - 1:
+            self.frame_index += 36 * dt
+            if self.frame_index >= len(self.frames):
+                self.frame_index = len(self.frames) - 1
+
+        self.image = self.frames[int(self.frame_index)]
+
+    def update(self, dt):
+        if self.hit_timer > 0:
+            self.hit()
+            self.hit_timer -= dt
+
+        self.animate(dt)
+
+class HealthDrain(pygame.sprite.Sprite):
+    def __init__(self, groups, player):
+        super().__init__(groups)
+        self.groups = groups
+        self.player = player
+        self.offset = pygame.Vector2(0, 0)
+        self.height = 0.8 * TILE_SIZE
+        self.amplitude = 0.2 * TILE_SIZE
+        self.image = pygame.Surface((0, 0))
+        self.rect = self.image.get_rect(center=self.player.pos)
+        self.hitbox = self.rect
+        self.particle_emitter1 = ParticleEmitter(self.groups, self.player.pos - (self.amplitude, 0), HealingParticle, dir=pygame.Vector2(0, 1), cooldown_timer_max=0.008)
+        self.particle_emitter2 = ParticleEmitter(self.groups, self.player.pos + (self.amplitude, 0), HealingParticle, dir=pygame.Vector2(0, 1), cooldown_timer_max=0.008)
+        self.particle_emitter1._layer = 14
+        self.particle_emitter2._layer = 13
+        self.offset_timer = -0.05
+        self.offset_timer_max = 0.4
+
+    def update(self, dt):
+        self.offset = pygame.Vector2(2 * self.amplitude * math.cos(self.offset_timer / self.offset_timer_max * 2 * math.pi), (-self.height) * self.offset_timer / self.offset_timer_max)
+        self.particle_emitter1.pos = self.player.pos + self.offset
+        self.particle_emitter2.pos = self.player.pos + (-self.offset.x, self.offset.y)
+
+        if self.offset_timer > self.offset_timer_max / 2:
+            self.particle_emitter1._layer = 13
+            self.particle_emitter2._layer = 14
+
+        if self.offset_timer < self.offset_timer_max:
+            self.offset_timer += dt
+        else:
+            self.particle_emitter1.kill()
+            self.particle_emitter2.kill()
+            self.kill()
+
+class DragonsBreath(pygame.sprite.Sprite):
+    def __init__(self, groups, enemy_sprites, collision_sprites, player, dir):
+        super().__init__(groups)
+        self.groups = groups
+        self.enemy_sprites = enemy_sprites
+        self.collision_sprites = collision_sprites
+        self.player = player
+        self.image = pygame.Surface((0, 0))
+        self.rect = self.image.get_rect(center=self.player.pos)
+        self.hitbox = self.rect
+        self.fire_timer = 0
+        self.fire_timer_max = 0.1
+        self.last_dir = dir
+        self.distance = 50
+        self.angle = 45
+
+    def update(self, dt):
+        if self.player.direction.length() != 0:
+            self.last_dir = self.player.direction.normalize()
+
+        if self.fire_timer > 0:
+            self.fire_timer -= dt
+        else:
+            self.fire_timer = self.fire_timer_max
+            dbf = DragonsBreathFire(self.groups, self.enemy_sprites, self.collision_sprites, self.player.pos.copy() + self.last_dir * self.distance + pygame.Vector2(0, -30), self.last_dir.rotate(math.sin(self.player.fire_timer / self.player.fire_timer_max * 6 * math.pi) * self.angle))
+            dbf._layer = 13
+
+class DragonsBreathFire(pygame.sprite.Sprite):
+    def __init__(self, groups, enemy_sprites, collision_sprites, pos, dir):
+        super().__init__(groups)
+        self.enemy_sprites = enemy_sprites
+        self.collision_sprites = collision_sprites
         self.pos = pos
         self.dir = dir
-        self.horizontal = True if self.dir.y != 0 else False
-        self.s_mult = 1.5
-        if self.horizontal:
-            self.image = pygame.image.load(join('images', 'spells', f'rock_wall_horizontal.png')).convert_alpha()
-            self.image = pygame.transform.scale(self.image, (2 * self.s_mult * TILE_SIZE, 2 * self.s_mult * TILE_SIZE))
-        else:
-            self.image = pygame.image.load(join('images', 'spells', f'rock_wall_vertical.png')).convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.s_mult * TILE_SIZE, 3 * self.s_mult * TILE_SIZE))
+        self.frames = []
+        self.load_images()
+        self.image = pygame.image.load(join('images', 'spells', 'dragons_breath', 'dragons_breath0.png')).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (2 * TILE_SIZE, 2 * TILE_SIZE))
+        self.image = pygame.transform.rotate(self.image, self.dir.angle_to(pygame.Vector2(0, -1)))
+        self.image.set_alpha(196)
+        self.frame_index = 0
         self.rect = self.image.get_rect(center=pos)
-        self.hitbox = pygame.Rect(0, 0, self.s_mult * 120, self.s_mult * 56) if self.horizontal else pygame.Rect(0, 0, self.s_mult * 56, self.s_mult * 120)
-        self.hitbox.midbottom = self.rect.midbottom
-        self.hitbox.bottom -= self.s_mult * 20
-        self.pos = self.hitbox.midtop
+        self.hitbox = self.rect
+        self.life_timer_max = 0.3
+        self.life_timer = self.life_timer_max
+        self.fade_timer_max = 0.2
+        self.fade_timer = self.fade_timer_max
+        self.base_speed = randrange(600, 700)
+        self.speed_min = randrange(150, 200)
+        self.fade = False
+
+    def load_images(self):
+        for folder_path, _, file_names in walk(join('images', 'spells', 'dragons_breath')):
+            for file_name in sorted(file_names, key=lambda name: int(sub(f'[^0-9]', '', name))):
+                full_path = join(folder_path, file_name)
+                surf = pygame.image.load(full_path).convert_alpha()
+                surf = pygame.transform.scale(surf, (2 * TILE_SIZE, 2 * TILE_SIZE))
+                surf = pygame.transform.rotate(surf, self.dir.angle_to(pygame.Vector2(0, -1)))
+                surf.set_alpha(160)
+                self.frames.append(surf)
+
+    def collision(self):
+        for sprite in self.enemy_sprites:
+            if sprite.rect.colliderect(self.hitbox):
+                apply_damage(sprite, 1, 50, sprite.pos - self.pos, 10)
+                return True
+
+        for sprite in self.collision_sprites:
+            if isinstance(sprite, RockWall) and sprite.hitbox.colliderect(self.hitbox):
+                return True
+
+        return False
+
+    def move(self, dt):
+        self.pos += (self.base_speed - ((self.base_speed - self.speed_min) * (1 - self.life_timer / self.life_timer_max))) * self.dir * dt
         self.rect.center = self.pos
-        self.hit_timer = 1
+        self.hitbox = self.rect
+        if not self.fade and self.collision():
+            self.fade = True
+
+    def update(self, dt):
+        self.move(dt)
+
+        if self.life_timer > 0:
+            self.image = self.frames[math.floor(4 * (1 - self.life_timer / self.life_timer_max))]
+            self.life_timer -= dt
+            if self.life_timer <= 0:
+                self.fade = True
+
+        if self.fade:
+            if self.fade_timer > 0:
+                self.fade_timer -= dt
+                self.image = self.frames[math.floor(3 * (1 - self.fade_timer / self.fade_timer_max) + 3)]
+                self.image.set_alpha(127 + int(self.fade_timer / self.fade_timer_max * 128))
+            else:
+                self.kill()

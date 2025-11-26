@@ -4,7 +4,7 @@ from settings import *
 from random import random, randint, uniform
 
 class ParticleEmitter(pygame.sprite.Sprite):
-    def __init__(self, groups, pos, particle, dir=pygame.Vector2(0, 0), cooldown_timer_max=0.1, amount=1, one_shot=False):
+    def __init__(self, groups, pos, particle, dir=pygame.Vector2(1, 0), cooldown_timer_max=0.1, amount=1, one_shot=False):
         super().__init__(groups)
         self.groups = groups
         self.image = pygame.Surface((0, 0))
@@ -17,6 +17,7 @@ class ParticleEmitter(pygame.sprite.Sprite):
         self.cooldown_timer_max = cooldown_timer_max
         self.amount = amount
         self.one_shot = one_shot
+        self.particles = []
 
     def update(self, dt):
         if self.cooldown_timer > 0:
@@ -24,7 +25,8 @@ class ParticleEmitter(pygame.sprite.Sprite):
         else:
             for i in range(self.amount):
                 particle = self.particle(self.groups, self.pos, self.dir)
-                particle._layer = 13
+                particle._layer = self.layer
+                self.particles.append(particle)
             self.cooldown_timer = self.cooldown_timer_max
 
         if self.one_shot:
@@ -129,15 +131,6 @@ class DashParticle(BaseParticle):
             start_rot_range=(0, 360)
         )
 
-    def make_regular_polygon(self, side_num, angle, radius, surf, color):
-        points = []
-        for i in range(side_num):
-            x = radius + radius * math.cos(math.pi * 2 * i / side_num + angle)
-            y = radius + radius * math.sin(math.pi * 2 * i / side_num + angle)
-            points.append([int(x), int(y)])
-        pygame.draw.polygon(surf, color, points)
-        return surf
-
 class ShootingStarFlyParticle(BaseParticle):
     def __init__(self, groups, pos, dir):
         self.image = pygame.image.load(join('images', 'effects', 'shooting_star', 'fly', '0.png')).convert_alpha()
@@ -177,4 +170,22 @@ class ShootingStarExplodeParticle(BaseParticle):
             start_speed_range=(40, 50),
             end_speed_range=(0, 10),
             accel_range=(3, 5),
+        )
+
+class HealingParticle(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'effects', 'shooting_star', 'fly', '0.png')).convert_alpha()
+        super().__init__(
+            groups=groups,
+            pos=pos,
+            life_timer=0.5 + random() * 0.3,
+            fade_timer=0.3,
+            image=self.image,
+            size=(16, 16),
+            start_colour_range=((60, 100, 50, 100), (70, 100, 60, 100)),
+            end_colour_range=((70, 100, 5, 100), (70, 100, 10, 100)),
+            dir=dir,
+            start_speed_range=(0, 10),
+            end_speed_range=(0, 0),
+            accel_range=(1, 2),
         )

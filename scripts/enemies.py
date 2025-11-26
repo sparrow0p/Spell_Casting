@@ -1,8 +1,6 @@
-from random import random
-
-import pygame
-
 from settings import *
+from random import random
+from components import HealthComponent
 
 class Bat(pygame.sprite.Sprite):
     def __init__(self, pos, groups, player, collision_sprites):
@@ -17,15 +15,13 @@ class Bat(pygame.sprite.Sprite):
         self.image = pygame.image.load(join('images', 'enemies', 'bat', 'move', '0.png')).convert_alpha()
         self.rect = self.image.get_rect(center=pos)
         self.pos = pygame.Vector2(self.rect.center)
-        self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, BAT_SIZE)
+        self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, -0.5 * BAT_SIZE)
         self.hitbox.bottom = self.rect.bottom
         self.collision_sprites = collision_sprites
         self.angle = 0
-
-        # movement
         self.direction = pygame.Vector2()
         self.vel = pygame.Vector2()
-        self.move_speed = 3.125 * BAT_SIZE
+        self.move_speed = 2.5 * BAT_SIZE
         self.move_accel = 0.15 * BAT_SIZE
         self.charge_speed = 0.125 * BAT_SIZE
         self.lunge_speed = 15 * BAT_SIZE
@@ -40,6 +36,13 @@ class Bat(pygame.sprite.Sprite):
         self.rng_num_timer = 0
         self.rng_num_timer_max = 1
         self.rng_vec = pygame.Vector2()
+        self.health = HealthComponent(self, 2)
+        self.height = 0.0
+        self.max_height = 0.0
+        self.thrown_speed = 7 * PLAYER_SIZE
+        self.thrown_dir = pygame.Vector2()
+        self.thrown_timer_start = 0.0
+        self.thrown_timer = 0.0
 
     def load_images(self):
         folders = list(walk(join('images', 'enemies', 'bat')))[0][1]
@@ -51,6 +54,9 @@ class Bat(pygame.sprite.Sprite):
                     full_path = join(folder_path, file_name)
                     surf = pygame.image.load(full_path).convert_alpha()
                     self.frames[folder].append(surf)
+
+    def die(self):
+        self.kill()
 
     def locate_player(self):
         match self.state:
@@ -77,19 +83,27 @@ class Bat(pygame.sprite.Sprite):
                 self.vel = self.vel.lerp(self.direction * self.charge_speed, min(self.move_accel * dt, 1))
             case 'lunge':
                 self.vel = self.vel.lerp(self.direction * self.lunge_speed, min(self.move_accel * dt, 1))
+            case 'thrown':
+                self.vel = self.thrown_dir.normalize() * self.thrown_speed
+                self.height = (2 * (self.thrown_timer / self.thrown_timer_start) - 1) ** 2 * self.max_height - self.max_height
 
         self.pos.x += self.vel.x * dt
         self.rect.centerx = round(self.pos.x)
         self.hitbox.centerx = round(self.pos.x)
         self.collision('horizontal')
         self.pos.y += self.vel.y * dt
-        self.rect.bottom = round(self.pos.y) + 0.125 * BAT_SIZE
+        if self.state == 'thrown':
+            self.rect.bottom = round(self.pos.y) + 0.125 * BAT_SIZE + self.height
+        else:
+            self.rect.bottom = round(self.pos.y) + 0.125 * BAT_SIZE
         self.hitbox.centery = round(self.pos.y)
         self.collision('vertical')
 
     def collision(self, direction):
         for sprite in self.collision_sprites:
             if sprite.hitbox.colliderect(self.hitbox):
+                if hasattr(sprite, 'hit_timer') and sprite.hit_timer > 0:
+                    continue
                 if direction == 'horizontal':
                     if self.vel.x > 0:
                         self.hitbox.right = sprite.hitbox.left
@@ -121,6 +135,12 @@ class Bat(pygame.sprite.Sprite):
                 if not self.lunge_timer > 0:
                     self.state = 'move'
                     self.attack_cooldown = self.attack_cooldown_max
+            case 'thrown':
+                if self.thrown_timer <= 0:
+                    if self.health.health <= 0:
+                        self.die()
+                    else:
+                        self.state = 'move'
 
     def update_timer(self, dt):
         if self.charge_timer > 0:
@@ -129,6 +149,10 @@ class Bat(pygame.sprite.Sprite):
             self.lunge_timer -= dt
         if self.attack_cooldown > 0:
             self.attack_cooldown -= dt
+        if self.health.i_frame_timer > 0:
+            self.health.i_frame_timer -= dt
+        if self.thrown_timer > 0:
+            self.thrown_timer -= dt
         if self.rng_num_timer > 0:
             self.rng_num_timer -= dt
         else:
@@ -147,18 +171,30 @@ class Bat(pygame.sprite.Sprite):
 
         self.image = self.frames[self.state][int(self.frame_index) % len(self.frames[self.state])]
 
+        if self.health.i_frame_timer > 0:
+            mask = pygame.mask.from_surface(self.image)
+            mask_surf = mask.to_surface()
+            mask_surf.set_colorkey((0, 0, 0))
+            surf_w, surf_h = mask_surf.get_size()
+            for x in range(surf_w):
+                for y in range(surf_h):
+                    if mask_surf.get_at((x, y))[0] == 255:
+                        mask_surf.set_at((x, y), (230, 30, 30))
+            self.image = mask_surf
+
     def update(self, dt):
         self.change_state()
         self.locate_player()
+        
         self.move(dt)
         if self.old_state == 'move' and self.state == 'charge':
-            attack = Attack(self.pos + self.direction * 150, - self.angle, self.groups[0], self.player, self, self.charge_timer_max)
+            attack = Attack(self.pos + self.direction * 150, self.direction, -self.angle, self.groups[0], self.player, self, self.charge_timer_max)
             attack._layer = 11
         self.update_timer(dt)
         self.animate(dt)
 
 class Attack(pygame.sprite.Sprite):
-    def __init__(self, pos, angle, groups, player, bat, charge_timer_max):
+    def __init__(self, pos, dir, angle, groups, player, bat, charge_timer_max):
         super().__init__(groups)
         self.player = player
         self.bat = bat
@@ -173,7 +209,9 @@ class Attack(pygame.sprite.Sprite):
         self.image.set_alpha(int(255 * 0.25 ** 4))
         self.rect = self.image.get_rect(center=pos)
         self.hitbox = self.image.get_rect(center=pos)
+        self.mask = pygame.mask.from_surface(self.image)
         self.pos = pygame.Vector2(self.rect.center)
+        self.dir = dir
         self.angle = angle
 
     def animate(self):
@@ -182,14 +220,13 @@ class Attack(pygame.sprite.Sprite):
             self.image.set_alpha(255 * (0.25 + 0.75 * delta) ** 4)
         else:
             self.image = self.frames[1]
-            mask = pygame.mask.from_surface(self.image)
             offset = (self.player.hitbox.left - self.rect.left, self.player.hitbox.top - self.rect.top)
 
-            if mask.overlap(pygame.mask.Mask(self.player.hitbox.size, True), offset):
-                self.player.damage(1)
+            if self.mask.overlap(pygame.mask.Mask(self.player.hitbox.size, True), offset):
+                self.player.damage(1, 300, self.dir, 50)
 
     def update(self, dt):
-        if not self.charge_timer > 0.15 or not self.bat.alive():
+        if not self.charge_timer > 0.15 or not self.bat.alive() or self.bat.state == 'thrown':
             self.kill()
 
         self.animate()
