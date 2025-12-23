@@ -1,6 +1,7 @@
 from settings import *
 from random import random
-from components import HealthComponent
+from components import *
+from spell_book import RockWall
 
 class Bat(pygame.sprite.Sprite):
     def __init__(self, pos, groups, player, collision_sprites):
@@ -15,6 +16,10 @@ class Bat(pygame.sprite.Sprite):
         self.image = pygame.image.load(join('images', 'enemies', 'bat', 'move', '0.png')).convert_alpha()
         self.rect = self.image.get_rect(center=pos)
         self.pos = pygame.Vector2(self.rect.center)
+        self.sounds = {}
+        self.max_volume = 0.15
+        self.volume = self.max_volume
+        load_audio(self, "enemies/bat", self.max_volume)
         self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, -0.5 * BAT_SIZE)
         self.hitbox.bottom = self.rect.bottom
         self.collision_sprites = collision_sprites
@@ -43,6 +48,9 @@ class Bat(pygame.sprite.Sprite):
         self.thrown_dir = pygame.Vector2()
         self.thrown_timer_start = 0.0
         self.thrown_timer = 0.0
+        self.flap_sfx_timer = 0.1
+        self.flap_sfx_timer_max = 0.9
+        self.flap_sfx_frequency = 0.0
 
     def load_images(self):
         folders = list(walk(join('images', 'enemies', 'bat')))[0][1]
@@ -55,8 +63,9 @@ class Bat(pygame.sprite.Sprite):
                     surf = pygame.image.load(full_path).convert_alpha()
                     self.frames[folder].append(surf)
 
-    def die(self):
-        self.kill()
+    def kill(self):
+        play(self, "death", volume=self.volume * 2)
+        super().kill()
 
     def locate_player(self):
         match self.state:
@@ -90,14 +99,16 @@ class Bat(pygame.sprite.Sprite):
         self.pos.x += self.vel.x * dt
         self.rect.centerx = round(self.pos.x)
         self.hitbox.centerx = round(self.pos.x)
-        self.collision('horizontal')
+        if self.state != 'thrown':
+            self.collision('horizontal')
         self.pos.y += self.vel.y * dt
         if self.state == 'thrown':
             self.rect.bottom = round(self.pos.y) + 0.125 * BAT_SIZE + self.height
         else:
             self.rect.bottom = round(self.pos.y) + 0.125 * BAT_SIZE
         self.hitbox.centery = round(self.pos.y)
-        self.collision('vertical')
+        if self.state != 'thrown':
+            self.collision('vertical')
 
     def collision(self, direction):
         for sprite in self.collision_sprites:
@@ -135,10 +146,11 @@ class Bat(pygame.sprite.Sprite):
                 if not self.lunge_timer > 0:
                     self.state = 'move'
                     self.attack_cooldown = self.attack_cooldown_max
+                    play(self, "attack", play_all=True, volume=self.volume)
             case 'thrown':
                 if self.thrown_timer <= 0:
                     if self.health.health <= 0:
-                        self.die()
+                        self.kill()
                     else:
                         self.state = 'move'
 
@@ -161,6 +173,19 @@ class Bat(pygame.sprite.Sprite):
             ang = self.rng_num * 2 * math.pi
             self.rng_vec = pygame.Vector2(math.cos(ang), math.sin(ang))
             self.rng_vec.scale_to_length(150)
+
+        match self.state:
+            case 'move':
+                self.flap_sfx_frequency = 1.0
+            case 'charge':
+                self.flap_sfx_frequency = 4.0
+            case _:
+                self.flap_sfx_frequency = 0.0
+
+        self.flap_sfx_timer -= dt * self.flap_sfx_frequency
+        if self.flap_sfx_timer <= 0:
+            play(self, "flap", volume=self.volume)
+            self.flap_sfx_timer = self.flap_sfx_timer_max
 
     def animate(self, dt):
         match self.state:
@@ -187,15 +212,17 @@ class Bat(pygame.sprite.Sprite):
         self.locate_player()
         
         self.move(dt)
+        self.volume = max(self.max_volume * (800.0 - self.pos.distance_to(self.player.pos)) / 800.0, 0)
         if self.old_state == 'move' and self.state == 'charge':
-            attack = Attack(self.pos + self.direction * 150, self.direction, -self.angle, self.groups[0], self.player, self, self.charge_timer_max)
+            attack = Attack(self.groups[0], self.collision_sprites, self.pos + self.direction * 150, self.direction, -self.angle, self.player, self, self.charge_timer_max + 0.05)
             attack._layer = 11
         self.update_timer(dt)
         self.animate(dt)
 
 class Attack(pygame.sprite.Sprite):
-    def __init__(self, pos, dir, angle, groups, player, bat, charge_timer_max):
+    def __init__(self, groups, collision_sprites, pos, dir, angle, player, bat, charge_timer_max):
         super().__init__(groups)
+        self.collision_sprites = collision_sprites
         self.player = player
         self.bat = bat
         self.charge_timer = charge_timer_max
@@ -222,8 +249,14 @@ class Attack(pygame.sprite.Sprite):
             self.image = self.frames[1]
             offset = (self.player.hitbox.left - self.rect.left, self.player.hitbox.top - self.rect.top)
 
-            if self.mask.overlap(pygame.mask.Mask(self.player.hitbox.size, True), offset):
-                self.player.damage(1, 300, self.dir, 50)
+            if self.player.hitbox.colliderect(self.hitbox):
+                if self.mask.overlap(pygame.mask.Mask(self.player.hitbox.size, True), offset):
+                    self.player.damage(2, 300, self.dir, 50)
+
+            for sprite in self.collision_sprites:
+                if isinstance(sprite, RockWall) and sprite.hitbox.colliderect(self.hitbox):
+                    if self.mask.overlap(pygame.mask.Mask(sprite.hitbox.size, True), offset):
+                        sprite.damage(1)
 
     def update(self, dt):
         if not self.charge_timer > 0.15 or not self.bat.alive() or self.bat.state == 'thrown':
@@ -231,3 +264,22 @@ class Attack(pygame.sprite.Sprite):
 
         self.animate()
         self.charge_timer -= dt
+
+class Skeletor(pygame.sprite.Sprite):
+    def __init__(self, groups, collision_sprites, player, pos):
+        super().__init__(groups)
+        self.collision_sprites = collision_sprites
+        self.player = player
+        self.frames = {}
+        self.load_images()
+
+    def load_images(self):
+        folders = list(walk(join('images', 'enemies', 'skeleton')))[0][1]
+        self.frames = {}
+        for folder in folders:
+            for folder_path, _, file_names in walk(join('images', 'enemies', 'skeleton', folder)):
+                self.frames[folder] = []
+                for file_name in sorted(file_names, key=lambda name: int(name.split('.')[0])):
+                    full_path = join(folder_path, file_name)
+                    surf = pygame.image.load(full_path).convert_alpha()
+                    self.frames[folder].append(surf)

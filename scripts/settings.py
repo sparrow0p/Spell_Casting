@@ -3,6 +3,7 @@ import math
 from os.path import join 
 from os import walk
 from re import sub
+from random import randrange, randint, choice
 
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 660
 # WINDOW_WIDTH, WINDOW_HEIGHT = 1920, 1020

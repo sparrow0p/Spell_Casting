@@ -1,11 +1,12 @@
+from random import choice, randrange
+
 import pygame
 
 from settings import *
 from player import Player
 from enemies import Bat
 from sprites import *
-from random import choice
-from groups import AllSprites
+from groups import *
 from pytmx.util_pygame import load_pygame
 
 class Game:
@@ -25,7 +26,7 @@ class Game:
 
         # enemy timer
         self.enemy_event = pygame.event.custom_type()
-        pygame.time.set_timer(self.enemy_event, 3000)
+        pygame.time.set_timer(self.enemy_event, 9000)
         self.spawn_positions = []
 
         self.setup()
@@ -74,7 +75,7 @@ class Game:
                         self.player.set_coyote_time_cast()
 
                 if event.type == self.enemy_event:
-                    bat = Bat(choice(self.spawn_positions), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
+                    bat = Bat(choice(self.spawn_positions) + pygame.Vector2(randrange(-100, 100), randrange(-100, 100)), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
                     bat._layer = 13
 
                 if event.type == pygame.QUIT:

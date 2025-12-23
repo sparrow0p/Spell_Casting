@@ -172,6 +172,84 @@ class ShootingStarExplodeParticle(BaseParticle):
             accel_range=(3, 5),
         )
 
+class RockWallExplosion(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'spells', 'rock_pillar_rocks', f'rock_pillar_rocks{randint(0, 5)}.png')).convert_alpha()
+        self.dir = pygame.math.Vector2(uniform(-1/2, 1/2), 1).normalize()
+        super().__init__(
+            groups=groups,
+            pos=pos + pygame.math.Vector2(uniform(-100, 100), uniform(-100, 100)),
+            life_timer=0.5 + random() * 0.3,
+            fade_timer=0.3,
+            image=self.image,
+            size=(64, 64),
+            dir=self.dir,
+            start_speed_range=(200, 220),
+            end_speed_range=(0, 10),
+            accel_range=(2, 3),
+        )
+
+class RockWallRocksStar(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'effects', 'shooting_star', 'fly', '0.png')).convert_alpha()
+        start_rot_range = 90 - math.atan2(dir[1], dir[0]) % (2 * math.pi) * 180 / math.pi
+        super().__init__(
+            groups=groups,
+            pos=pos,
+            life_timer=0.3,
+            fade_timer=0.1,
+            image=self.image,
+            size=(24, 48),
+            start_colour_range=((270, 100, 80, 100), (280, 100, 90, 100)),
+            end_colour_range=((250, 100, 50, 100), (260, 100, 60, 100)),
+            dir=dir,
+            dir_angle_range=90,
+            start_speed_range=(50, 60),
+            end_speed_range=(50, 60),
+            accel_range=(10, 15),
+            start_rot_range=(start_rot_range, start_rot_range)
+        )
+
+class RockWallRocksFire(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'spells', 'dragons_breath', 'dragons_breath3.png')).convert_alpha()
+        start_rot_range = 90 - math.atan2(dir[1], dir[0]) % (2 * math.pi) * 180 / math.pi
+        super().__init__(
+            groups=groups,
+            pos=pos,
+            life_timer=0.3,
+            fade_timer=0.1,
+            image=self.image,
+            size=(64, 64),
+            start_colour_range=((270, 100, 80, 100), (280, 100, 90, 100)),
+            end_colour_range=((250, 100, 50, 100), (260, 100, 60, 100)),
+            dir=dir,
+            dir_angle_range=90,
+            start_speed_range=(50, 60),
+            end_speed_range=(50, 60),
+            accel_range=(10, 15),
+            start_rot_range=(start_rot_range, start_rot_range)
+        )
+
+class RockWallRocksRock(BaseParticle):
+    def __init__(self, groups, pos, dir):
+        self.image = pygame.image.load(join('images', 'spells', 'rock_pillar_rocks', 'rock_pillar_rocks0.png')).convert_alpha()
+        start_rot_range = 90 - math.atan2(dir[1], dir[0]) % (2 * math.pi) * 180 / math.pi
+        super().__init__(
+            groups=groups,
+            pos=pos,
+            life_timer=0.3,
+            fade_timer=0.1,
+            image=self.image,
+            size=(32, 32),
+            dir=dir,
+            dir_angle_range=90,
+            start_speed_range=(50, 60),
+            end_speed_range=(50, 60),
+            accel_range=(10, 15),
+            start_rot_range=(start_rot_range, start_rot_range)
+        )
+
 class HealingParticle(BaseParticle):
     def __init__(self, groups, pos, dir):
         self.image = pygame.image.load(join('images', 'effects', 'shooting_star', 'fly', '0.png')).convert_alpha()
