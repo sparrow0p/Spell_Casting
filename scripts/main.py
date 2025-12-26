@@ -4,7 +4,7 @@ import pygame
 
 from settings import *
 from player import Player
-from enemies import Bat
+from enemies import Bat, Skeleton
 from sprites import *
 from groups import *
 from pytmx.util_pygame import load_pygame
@@ -73,10 +73,16 @@ class Game:
                         self.player.set_coyote_time_dash()
                     if event.key == pygame.K_z:
                         self.player.set_coyote_time_cast()
+                    if event.key == pygame.K_q:
+                        bat = Bat(choice(self.spawn_positions) + pygame.Vector2(randrange(-100, 100), randrange(-100, 100)), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
+                        bat._layer = 13
+                    if event.key == pygame.K_w:
+                        skeleton = Skeleton((self.all_sprites, self.enemy_sprites), self.collision_sprites, self.player, pygame.Vector2(300, 300))
+                        skeleton._layer = 13
 
-                if event.type == self.enemy_event:
-                    bat = Bat(choice(self.spawn_positions) + pygame.Vector2(randrange(-100, 100), randrange(-100, 100)), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
-                    bat._layer = 13
+                # if event.type == self.enemy_event:
+                #     bat = Bat(choice(self.spawn_positions) + pygame.Vector2(randrange(-100, 100), randrange(-100, 100)), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
+                #     bat._layer = 13
 
                 if event.type == pygame.QUIT:
                     self.running = False

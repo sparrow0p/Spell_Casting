@@ -68,7 +68,7 @@ class Player(pygame.sprite.Sprite):
         self.dash_start_pos = pygame.Vector2()
         self.recharge_timer_max = 0.4
         self.recharge_timer = 0
-        self.recharge_rate = 10.7
+        self.recharge_rate = 0.7
         self.dragons_breath = None
         self.fire_timer = 0
         self.fire_timer_max = 2
@@ -77,6 +77,7 @@ class Player(pygame.sprite.Sprite):
         self.run_sfx_timer = 0.1
         self.run_sfx_timer_max = 0.3
         self.run_sfx_frequency = 0.0
+        self.has_cat_ears = False
 
     def load_images(self):
         folders = list(walk(join('images', 'player')))[0][1]
@@ -314,6 +315,9 @@ class Player(pygame.sprite.Sprite):
                 rock_wall = RockWall((self.groups, self.collision_sprites), self.enemy_sprites, self, self.pos.copy(), self.dash_dir)
                 rock_wall._layer = 13
                 return 'stone_wall'
+            case [3, 1, 4] | [5, 7, 4]:
+                self.has_cat_ears = not self.has_cat_ears
+                return 'car_ears'
 
     def cast_fail(self):
         self.coyote_time_dash = 0
@@ -364,7 +368,7 @@ class Player(pygame.sprite.Sprite):
                 if self.frame_index < len(self.frames[self.state]) - 1:
                     self.frame_index += 12 * dt
 
-        self.image = self.frames[self.state][int(self.frame_index) % len(self.frames[self.state])]
+        self.image = self.frames[self.state][int(self.frame_index) % len(self.frames[self.state])] if not self.has_cat_ears else self.frames[self.state + "_cat_ears"][int(self.frame_index) % len(self.frames[self.state])]
 
         if not self.is_moving_right:
             self.image = pygame.transform.flip(self.image, 1, 0)

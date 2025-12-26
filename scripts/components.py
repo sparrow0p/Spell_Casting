@@ -12,7 +12,10 @@ class HealthComponent:
         if self.i_frame_timer <= 0 and self.parent.state != 'dead' and self.parent.state != 'thrown':
             self.i_frame_timer = self.i_frame_timer_max
             self.health -= damage_val
-            play(self.parent, "damage", play_all=True, volume=self.parent.volume * 4)
+            if hasattr(self.parent, "flip"):
+                play(self.parent, "damage", volume=self.parent.volume)
+            else:
+                play(self.parent, "damage", play_all=True, volume=self.parent.volume * 4)
 
             if kb_strength and kb_dir:
                 self.parent.state = 'thrown'
