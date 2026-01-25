@@ -13,9 +13,9 @@ class HealthComponent:
             self.i_frame_timer = self.i_frame_timer_max
             self.health -= damage_val
             if hasattr(self.parent, "flip"):
-                play(self.parent, "damage", volume=self.parent.volume)
+                play(self.parent, "damage", self.parent.sfx_slider, volume=self.parent.volume)
             else:
-                play(self.parent, "damage", play_all=True, volume=self.parent.volume * 4)
+                play(self.parent, "damage", self.parent.sfx_slider, play_all=True, volume=self.parent.volume * 4)
 
             if kb_strength and kb_dir:
                 self.parent.state = 'thrown'
@@ -43,7 +43,7 @@ def apply_damage(sprite, damage_val, kb_strength=None, kb_dir=None, max_height=1
     if hasattr(sprite, "health"):
         sprite.health.damage(damage_val, kb_strength, kb_dir, max_height)
 
-def load_audio(self, path, volume):
+def load_audio(self, path):
     folders = list(walk(join('audio', path)))[0][1]
     for folder in folders:
         for folder_path, _, file_names in walk(join('audio', path, folder)):
@@ -51,15 +51,15 @@ def load_audio(self, path, volume):
             for file_name in file_names:
                 full_path = join(folder_path, file_name)
                 sfx = pygame.mixer.Sound(full_path)
-                sfx.set_volume(volume)
                 self.sounds[folder].append(sfx)
 
-def play(self, name, index=-1, play_all=False, repeat=0, volume=-1.0):
-    if volume == 0:
-        return
-    elif volume > 0:
+def play(self, name, sfx_slider, volume=1.0, index=-1, play_all=False, repeat=0):
+    if isinstance(volume, float):
         for sfx in self.sounds[name]:
-            sfx.set_volume(volume)
+            sfx.set_volume(volume * sfx_slider.value)
+    elif isinstance(volume, tuple):
+        for sfx, vol in zip(self.sounds[name], volume):
+            sfx.set_volume(vol * sfx_slider.value)
 
     if play_all or len(self.sounds[name]) == 1:
         for sfx in self.sounds[name]:

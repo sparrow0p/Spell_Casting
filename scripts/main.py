@@ -3,11 +3,13 @@ from random import choice, randrange
 import pygame
 
 from settings import *
+from plants import Plant
 from player import Player
-from enemies import Bat, Skeleton
 from sprites import *
 from groups import *
+from user_interface import *
 from pytmx.util_pygame import load_pygame
+from progress_logic import WaveLogic, WaveAreaTrigger
 
 class Game:
     def __init__(self):
@@ -17,26 +19,33 @@ class Game:
         pygame.display.set_caption('Spell_Casting')
         self.clock = pygame.time.Clock()
         self.running = True
+        self.update_game = False
+        self.player = None
+        pygame.mixer_music.load('audio/music/mus_lvl2_awake_loop.mp3')
+        pygame.mixer_music.set_volume(music_v)
+        pygame.mixer_music.play(loops=-1)
 
         # groups
+        self.start_menu_sprites = pygame.sprite.Group()
+        self.pause_menu_sprites = pygame.sprite.Group()
         self.collision_sprites = pygame.sprite.Group()
+        self.short_collision_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
-        self.ui_sprites = pygame.sprite.Group()
-        self.all_sprites = AllSprites(self.ui_sprites)
+        self.hud_sprites = pygame.sprite.Group()
+        self.all_sprites = AllSprites(self.hud_sprites, self.start_menu_sprites, self.pause_menu_sprites)
 
-        # enemy timer
-        self.enemy_event = pygame.event.custom_type()
-        pygame.time.set_timer(self.enemy_event, 9000)
-        self.spawn_positions = []
+        StartButton(self.start_menu_sprites, self, (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 100))
+        ResumeButton(self.pause_menu_sprites, self, (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 100))
+        MusicSlider((self.start_menu_sprites, self.pause_menu_sprites), self, (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 30))
+        self.sfx_slider = SFXSlider((self.start_menu_sprites, self.pause_menu_sprites), self, (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 30))
+        ExitButton((self.start_menu_sprites, self.pause_menu_sprites), self, (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100))
+        self.wave_logic = WaveLogic(self.all_sprites, self.collision_sprites, self.short_collision_sprites, self.enemy_sprites, self.sfx_slider)
 
-        self.setup()
-
-    def setup(self):
-        map = load_pygame(join('data', 'maps', 'world.tmx'))
+    def load_game(self):
+        map = load_pygame(join('map_data', 'maps', 'world.tmx'))
 
         for obj in map.get_layer_by_name('Collisions'):
-            sprite = Sprite((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y), pygame.Surface((WORLD_SCALE * obj.width, WORLD_SCALE * obj.height)),
-                            (self.all_sprites, self.collision_sprites))
+            sprite = CollisionSprite((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y), (WORLD_SCALE * obj.width, WORLD_SCALE * obj.height), (self.all_sprites, self.short_collision_sprites))
             sprite._layer = 0
 
         for x, y, image in map.get_layer_by_name('Ground').tiles():
@@ -44,22 +53,30 @@ class Game:
             sprite = Sprite((TILE_SIZE * x, TILE_SIZE * y), image, self.all_sprites)
             sprite._layer = 1
 
-        for x, y, image in map.get_layer_by_name('Shadows').tiles():
+        for x, y, image in map.get_layer_by_name('Tutorial').tiles():
             image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
             sprite = Sprite((TILE_SIZE * x, TILE_SIZE * y), image, self.all_sprites)
             sprite._layer = 2
 
-        for obj in map.get_layer_by_name('Objects'):
-            resized_image = pygame.transform.scale(obj.image, (WORLD_SCALE * obj.width, WORLD_SCALE * obj.height))
-            sprite = Sprite((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y), resized_image, self.all_sprites)
-            sprite._layer = 13
+        for obj in map.get_layer_by_name('Barriers'):
+            self.wave_logic.barriers_tiled[obj.index - 1].append(obj)
+        self.wave_logic.raise_barriers(2)
+        self.wave_logic.raise_barriers(3)
+
+        for obj in map.get_layer_by_name('Plants'):
+            plant = Plant((self.all_sprites, self.collision_sprites), obj)
+            plant._layer = 13
 
         for obj in map.get_layer_by_name('Entities'):
             if obj.name == 'Player':
-                self.player = Player(self.all_sprites, self.collision_sprites, self.ui_sprites, self.enemy_sprites, (WORLD_SCALE * obj.x, WORLD_SCALE * obj.y))
+                self.player = Player(self.all_sprites, self.collision_sprites, self.short_collision_sprites, self.hud_sprites, self.enemy_sprites, self.sfx_slider, (WORLD_SCALE * obj.x, WORLD_SCALE * obj.y))
                 self.player._layer = 13
+                self.wave_logic.player = self.player
             elif obj.name == 'Enemy':
-                self.spawn_positions.append((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y))
+                self.wave_logic.spawn_positions[obj.index - 1].append((WORLD_SCALE * obj.x, WORLD_SCALE * obj.y))
+
+        for obj in map.get_layer_by_name('Area Triggers'):
+            WaveAreaTrigger(self.all_sprites, obj, self.player, self.wave_logic)
 
     def run(self):
         while self.running:
@@ -73,26 +90,52 @@ class Game:
                         self.player.set_coyote_time_dash()
                     if event.key == pygame.K_z:
                         self.player.set_coyote_time_cast()
-                    if event.key == pygame.K_q:
-                        bat = Bat(choice(self.spawn_positions) + pygame.Vector2(randrange(-100, 100), randrange(-100, 100)), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
-                        bat._layer = 13
-                    if event.key == pygame.K_w:
-                        skeleton = Skeleton((self.all_sprites, self.enemy_sprites), self.collision_sprites, self.player, pygame.Vector2(300, 300))
-                        skeleton._layer = 13
 
-                # if event.type == self.enemy_event:
-                #     bat = Bat(choice(self.spawn_positions) + pygame.Vector2(randrange(-100, 100), randrange(-100, 100)), (self.all_sprites, self.enemy_sprites), self.player, self.collision_sprites)
-                #     bat._layer = 13
+                    if (event.key == pygame.K_p or event.key == pygame.K_ESCAPE) and not self.all_sprites.draw_start_menu:
+                        self.all_sprites.draw_pause_menu = not self.all_sprites.draw_pause_menu
+                        self.update_game = not self.update_game
+
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if self.all_sprites.draw_start_menu:
+                        for sprite in self.start_menu_sprites:
+                            if hasattr(sprite, 'on_click') and sprite.hitbox.collidepoint(pygame.mouse.get_pos()):
+                                sprite.on_click()
+
+                    if self.all_sprites.draw_pause_menu:
+                        for sprite in self.pause_menu_sprites:
+                            if hasattr(sprite, 'on_click') and sprite.hitbox.collidepoint(pygame.mouse.get_pos()):
+                                sprite.on_click()
+
+                if event.type == pygame.MOUSEMOTION:
+                    if self.all_sprites.draw_start_menu or self.all_sprites.draw_pause_menu:
+                        for sprite in self.start_menu_sprites:
+                            if hasattr(sprite, 'on_move'):
+                                sprite.on_move()
+
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if self.all_sprites.draw_start_menu or self.all_sprites.draw_pause_menu:
+                        for sprite in self.start_menu_sprites:
+                            if hasattr(sprite, 'on_release'):
+                                sprite.on_release()
 
                 if event.type == pygame.QUIT:
                     self.running = False
 
-            # update 
-            self.all_sprites.update(dt)
+            # update
+            if self.all_sprites.draw_start_menu:
+                self.start_menu_sprites.update(dt)
+            if self.all_sprites.draw_pause_menu:
+                self.pause_menu_sprites.update(dt)
+            if self.update_game:
+                self.all_sprites.update(dt)
+                self.wave_logic.update(dt)
 
             # draw
-            self.display_surface.fill('black')
-            self.all_sprites.draw(pygame.Vector2(round(self.player.pos.x), round(self.player.pos.y)))
+            self.display_surface.fill('#457a7d')
+            if self.player:
+                self.all_sprites.draw(pygame.Vector2(round(self.player.pos.x), round(self.player.pos.y)))
+            else:
+                self.all_sprites.draw(pygame.Vector2(0, 0))
             pygame.display.update()
 
         pygame.quit()

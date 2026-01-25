@@ -1,0 +1,256 @@
+{
+    "activeFile": "world.tmx",
+    "expandedProjectPaths": [
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets",
+        "."
+    ],
+    "fileStates": {
+        "C:/Users/Pawel/Desktop/Graveyard.tmx": {
+            "expandedGroupLayers": [
+                18,
+                17
+            ],
+            "scale": 4,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 512.125,
+                "y": 400.125
+            }
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#Bouquet_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#Fence_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#Fence_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#TX Plant": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#TX Props": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#TX Shadow": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Desktop/Graveyard.tmx#TX Tileset Grass": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx": {
+            "expandedGroupLayers": [
+                18
+            ],
+            "scale": 1.5,
+            "selectedLayer": 5,
+            "viewCenter": {
+                "x": 337.33333333333326,
+                "y": 207.33333333333331
+            }
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#Bouquet_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#Fence_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#Fence_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#TX Plant": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#TX Props": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#TX Shadow": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/Downloads/Graveyard.tmx#TX Tileset Grass": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/First Room.tmx": {
+            "scale": 0.5622070312499999,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1032.537780093799,
+                "y": 504.2626367899949
+            }
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/First Room.tmx#InteriorTilesLITE": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/First Room.tmx#messy furniture set updated v2": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/First Room.tmx#messy_room_door_tiles": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/First Room.tmx#midcentury_modern_room_door_tiles": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx": {
+            "scale": 1,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 512.5,
+                "y": 399.5
+            }
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#Bouquet_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#Fence_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#Fence_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#TX Plant": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#TX Props": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#TX Shadow": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx#TX Tileset Grass": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Clifs.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1.5,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Grass.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Ground.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 0.75,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Plant.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 1.5
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Shadows.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 3
+        },
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Wall.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 2
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/First Room.tmx": {
+            "scale": 2,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 512,
+                "y": 400
+            }
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/First Room.tmx#InteriorTilesLITE": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/First Room.tmx#messy furniture set updated v2": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/First Room.tmx#messy_room_door_tiles": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/First Room.tmx#midcentury_modern_room_door_tiles": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx": {
+            "scale": 4,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 477.75,
+                "y": 270.25
+            }
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#Bouquet_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#Fence_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#Fence_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#TX Plant": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#TX Props": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#TX Shadow": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Graveyard.tmx#TX Tileset Grass": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx": {
+            "scale": 2,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 512,
+                "y": 400
+            }
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx#InteriorTilesLITE": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx#messy furniture set updated v2": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx#messy_room_door_tiles": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx#midcentury_modern_furnitureset": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx#midcentury_modern_room_door_tiles": {
+            "scaleInDock": 1
+        },
+        "world.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 565.6666666666666,
+                "y": 3751.6666666666665
+            }
+        }
+    },
+    "last.imagePath": "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/graphics/tilesets",
+    "openFiles": [
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx",
+        "world.tmx"
+    ],
+    "project": "world.tiled-project",
+    "property.type": "int",
+    "recentFiles": [
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/Graveyard.tmx",
+        "world.tmx",
+        "C:/Users/Pawel/PycharmProjects/Afterbloom/world/maps/First Room.tmx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Clifs.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Wall.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Shadows.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Plant.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Ground.tsx",
+        "C:/Users/Pawel/PycharmProjects/Spell_Casting/data/tilesets/Grass.tsx",
+        "C:/Users/Pawel/Desktop/Graveyard.tmx",
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/Second Room.tmx",
+        "C:/Users/Pawel/PycharmProjects/afterbloom/Projekt/Afterbloom/world/maps/First Room.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.type": 0
+}

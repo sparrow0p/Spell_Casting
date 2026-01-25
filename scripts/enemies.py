@@ -6,7 +6,7 @@ from components import *
 from spell_book import RockWall
 
 class Bat(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, player, collision_sprites):
+    def __init__(self, pos, groups, player, collision_sprites, sfx_slider):
         super().__init__(groups)
         self.groups = groups
         self.frames = {}
@@ -29,10 +29,11 @@ class Bat(pygame.sprite.Sprite):
         self.sounds = {}
         self.max_volume = 0.15
         self.volume = self.max_volume
-        load_audio(self, "enemies/bat", self.max_volume)
+        load_audio(self, "enemies/bat")
         self.hitbox = self.rect.inflate(-0.5 * BAT_SIZE, -0.5 * BAT_SIZE)
         self.hitbox.bottom = self.rect.bottom
         self.collision_sprites = collision_sprites
+        self.sfx_slider = sfx_slider
         self.angle = 0
         self.direction = pygame.Vector2()
         self.vel = pygame.Vector2()
@@ -74,7 +75,7 @@ class Bat(pygame.sprite.Sprite):
                     self.frames[folder].append(surf)
 
     def kill(self):
-        play(self, "death", volume=self.volume * 2)
+        play(self, "death", self.sfx_slider, volume=self.volume * 2)
         super().kill()
 
     def locate_player(self):
@@ -152,7 +153,7 @@ class Bat(pygame.sprite.Sprite):
                 if not self.charge_timer > 0:
                     self.state = 'lunge'
                     self.lunge_timer = self.lunge_timer_max
-                    play(self, "attack", play_all=True, volume=self.volume)
+                    play(self, "attack", self.sfx_slider, play_all=True, volume=self.volume)
             case 'lunge':
                 if not self.lunge_timer > 0:
                     self.state = 'move'
@@ -194,7 +195,7 @@ class Bat(pygame.sprite.Sprite):
 
         self.flap_sfx_timer -= dt * self.flap_sfx_frequency
         if self.flap_sfx_timer <= 0:
-            play(self, "flap", volume=self.volume)
+            play(self, "flap", self.sfx_slider, volume=self.volume)
             self.flap_sfx_timer = self.flap_sfx_timer_max
 
     def animate(self, dt):
@@ -214,7 +215,7 @@ class Bat(pygame.sprite.Sprite):
         self.locate_player()
         
         self.move(dt)
-        self.volume = max(self.max_volume * (800.0 - self.pos.distance_to(self.player.pos)) / 800.0, 0)
+        self.volume = max(self.max_volume * (800.0 - self.pos.distance_to(self.player.pos)) / 800.0, 0.01)
         if self.old_state == 'move' and self.state == 'charge':
             attack = BatAttack(self.groups[0], self.collision_sprites, self.pos + self.direction * 150, self.direction, -self.angle, self.player, self, self.charge_timer_max + 0.05)
             attack._layer = 11
@@ -269,10 +270,12 @@ class BatAttack(pygame.sprite.Sprite):
         self.charge_timer -= dt
 
 class Skeleton(pygame.sprite.Sprite):
-    def __init__(self, groups, collision_sprites, player, pos):
+    def __init__(self, groups, collision_sprites, short_collision_sprites, player, sfx_slider, pos):
         super().__init__(groups)
         self.groups = groups
         self.collision_sprites = collision_sprites
+        self.short_collision_sprites = short_collision_sprites
+        self.sfx_slider = sfx_slider
         self.player = player
         self.frames = {}
         self.load_images()
@@ -294,7 +297,7 @@ class Skeleton(pygame.sprite.Sprite):
         self.sounds = {}
         self.max_volume = 0.15
         self.volume = self.max_volume
-        load_audio(self, "enemies/skeleton", self.max_volume)
+        load_audio(self, "enemies/skeleton")
         self.hitbox = self.rect.inflate(-0.875 * SKELETON_SIZE, -0.875 * SKELETON_SIZE)
         self.hitbox.bottom = self.rect.bottom
         self.direction = pygame.Vector2()
@@ -309,7 +312,7 @@ class Skeleton(pygame.sprite.Sprite):
         self.attack_cooldown_max = 3
         self.attack_cooldown = self.attack_cooldown_max
         self.attack_range = 400.0
-        self.health = HealthComponent(self, 4)
+        self.health = HealthComponent(self, 3)
         self.height = 0.0
         self.max_height = 0.0
         self.thrown_speed = 7 * SKELETON_SIZE
@@ -337,7 +340,7 @@ class Skeleton(pygame.sprite.Sprite):
                     self.frames[folder].append(surf)
 
     def kill(self):
-        play(self, "death", volume=self.volume * 2)
+        play(self, "death", self.sfx_slider, volume=self.volume * 2)
         super().kill()
 
     def locate_player(self):
@@ -375,7 +378,7 @@ class Skeleton(pygame.sprite.Sprite):
             self.collision('vertical')
 
     def collision(self, direction):
-        for sprite in self.collision_sprites:
+        for sprite in self.collision_sprites.sprites() + self.short_collision_sprites.sprites():
             if sprite.hitbox.colliderect(self.hitbox):
                 if hasattr(sprite, 'hit_timer') and sprite.hit_timer > 0:
                     continue
@@ -408,13 +411,13 @@ class Skeleton(pygame.sprite.Sprite):
                     self.state = 'charge'
                     self.charge_timer = self.charge_timer_max
                     self.frame_index = 0
-                    play(self, "charge", volume=self.volume)
+                    play(self, "charge", self.sfx_slider, volume=self.volume)
             case 'charge':
                 if not self.charge_timer > 0:
                     self.state = 'fire'
                     self.fire_timer = self.fire_timer_max
                     self.frame_index = 0
-                    play(self, "fire", play_all=True, volume=self.volume)
+                    play(self, "fire", self.sfx_slider, play_all=True, volume=self.volume)
             case 'fire':
                 if not self.fire_timer > 0:
                     self.state = 'walk'
@@ -454,7 +457,7 @@ class Skeleton(pygame.sprite.Sprite):
 
         self.walk_sfx_timer -= dt * self.walk_sfx_frequency
         if self.walk_sfx_timer <= 0:
-            play(self, "walk", volume=self.volume)
+            play(self, "walk", self.sfx_slider, volume=self.volume)
             self.walk_sfx_timer = self.walk_sfx_timer_max
 
     def animate(self, dt):
@@ -486,7 +489,7 @@ class Skeleton(pygame.sprite.Sprite):
         self.locate_player()
 
         self.move(dt)
-        self.volume = max(self.max_volume * (800.0 - self.pos.distance_to(self.player.pos)) / 800.0, 0)
+        self.volume = max(self.max_volume * (800.0 - self.pos.distance_to(self.player.pos)) / 800.0, 0.01)
         if self.old_state in ['walk', 'idle'] and self.state == 'charge':
             attack = SkeletonAttack(self.groups[0], self.collision_sprites, self.pos + self.direction.normalize() * 150, self.direction.normalize(),
                                self.direction.angle_to((1, 0)) / 180 * math.pi, self.player, self, self.charge_timer_max * 0.8, 20)

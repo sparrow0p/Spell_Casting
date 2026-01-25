@@ -9,17 +9,18 @@ from particles import ParticleEmitter, DashParticle
 from components import *
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, groups, collision_sprites, ui_sprites, enemy_sprites, pos):
+    def __init__(self, groups, collision_sprites, short_collision_sprites, hud_sprites, enemy_sprites, sfx_slider, pos):
         super().__init__(groups)
         self.groups = groups
         self.collision_sprites = collision_sprites
-        self.ui_sprites = ui_sprites
+        self.short_collision_sprites = short_collision_sprites
+        self.hud_sprites = hud_sprites
         self.enemy_sprites = enemy_sprites
+        self.sfx_slider = sfx_slider
         self.frames = {}
         self.load_images()
         self.sounds = {}
-        load_audio(self, "player", 0.3)
-        self.set_volume()
+        load_audio(self, "player")
         self.state, self.frame_index = 'idle', 0
         self.image = pygame.image.load(join('images', 'player', 'idle', 'idle0.png')).convert_alpha()
         self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
@@ -28,9 +29,9 @@ class Player(pygame.sprite.Sprite):
         self.pos += pygame.Vector2(0, 0.125 * PLAYER_SIZE)
         self.hitbox = self.rect.inflate(-0.5 * PLAYER_SIZE, -0.75 * PLAYER_SIZE)
         self.hitbox.bottom = self.rect.bottom
-        self.mana_bar = ManaBar((self.groups, self.ui_sprites))
+        self.mana_bar = ManaBar((self.groups, self.hud_sprites))
         self.mana_bar._layer = 30
-        self.health_bar = HealthBar((self.groups, self.ui_sprites))
+        self.health_bar = HealthBar((self.groups, self.hud_sprites))
         self.health_bar._layer = 30
         self.direction = pygame.Vector2()
         self.vel = pygame.Vector2()
@@ -89,14 +90,6 @@ class Player(pygame.sprite.Sprite):
                     surf = pygame.image.load(full_path).convert_alpha()
                     surf = pygame.transform.scale(surf, (PLAYER_SIZE, PLAYER_SIZE))
                     self.frames[folder].append(surf)
-
-    def set_volume(self):
-        self.sounds["damage"][0].set_volume(0.6)
-        self.sounds["damage"][1].set_volume(0.6)
-        self.sounds["damage"][2].set_volume(1.5)
-        self.sounds["fw_start"][0].set_volume(0.2)
-        self.sounds["fw_loop"][0].set_volume(0.1)
-        self.sounds["fw_end"][0].set_volume(0.2)
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -158,7 +151,7 @@ class Player(pygame.sprite.Sprite):
                     else:
                         self.frame_index = 0
                         self.state = 'get_up'
-                        play(self, "knockback_land")
+                        play(self, "knockback_land", self.sfx_slider, volume=0.3)
 
             case 'get_up':
                 pass
@@ -170,7 +163,7 @@ class Player(pygame.sprite.Sprite):
         if self.i_frame_timer <= 0 and self.state != 'dead' and self.state != 'thrown':
             self.i_frame_timer = self.i_frame_timer_max
             self.health_bar.charge -= damage_val
-            play(self, "damage", play_all=True)
+            play(self, "damage", self.sfx_slider, volume=(0.6, 0.6, 1.5), play_all=True)
 
             if kb_strength and kb_dir:
                 self.state = 'thrown'
@@ -192,7 +185,7 @@ class Player(pygame.sprite.Sprite):
         self.cast_fail()
         self.frame_index = 0
         self.vel = pygame.Vector2()
-        play(self, "death")
+        play(self, "death", self.sfx_slider, volume=0.3)
 
     def move(self, dt):
         match self.state:
@@ -249,7 +242,7 @@ class Player(pygame.sprite.Sprite):
                 self.spell_list.append((self.dash_dir_int - self.spell_list[0]) % 8)
             self.is_dashing = True
             self.is_drawing = True
-            play(self, "dash")
+            play(self, "dash", self.sfx_slider, volume=0.3)
             self.spell_line.start_drawing()
             self.dash_particle_emitter = ParticleEmitter(self.groups, self.pos, DashParticle, cooldown_timer_max=0.005)
             self.dash_particle_emitter._layer = 13
@@ -273,7 +266,7 @@ class Player(pygame.sprite.Sprite):
         if self.spell_list and self.coyote_time_cast > 0 and not self.is_dashing:
             self.coyote_time_cast = 0
             if self.is_fast_wind:
-                play(self, "fw_end")
+                play(self, "fw_end", self.sfx_slider, volume=0.2)
                 pause(self, "fw_loop")
                 self.is_fast_wind = False
                 for fwe in self.fast_wind_effects:
@@ -290,29 +283,29 @@ class Player(pygame.sprite.Sprite):
         spell_dir = self.spell_list.pop(0)
         match self.spell_list:
             case []:
-                shooting_star = ShootingStar(self.pos, self.dash_dir, self.groups, self.enemy_sprites, self, self.collision_sprites)
+                shooting_star = ShootingStar(self.pos, self.dash_dir, self.groups, self.enemy_sprites, self, self.collision_sprites, self.sfx_slider)
                 shooting_star._layer = 0
                 return 'falling_star'
             case [0]:
                 self.is_fast_wind = True
-                play(self, "fw_start")
-                play(self, "fw_loop", repeat=-1)
+                play(self, "fw_start", self.sfx_slider, volume=0.2)
+                play(self, "fw_loop", self.sfx_slider, volume=0.1, repeat=-1)
                 for i in (24, 12, 9):
-                    fwe = FastWindEffect(self.rect.center + pygame.Vector2(0, -1), i, self, self.groups)
+                    fwe = FastWindEffect(self.rect.center + pygame.Vector2(0, -1), i, self, self.groups, self.sfx_slider)
                     fwe._layer = 13
                     self.fast_wind_effects.append(fwe)
                 return 'fast_wind'
             case [1] | [7]:
-                hd = HealthDrain(self.groups, self)
+                hd = HealthDrain(self.groups, self, self.sfx_slider)
                 hd._layer = 13
                 return 'health_drain'
             case [3] | [5]:
                 self.fire_timer = self.fire_timer_max
-                self.dragons_breath = DragonsBreath(self.groups, self.enemy_sprites, self.collision_sprites, self, self.dash_dir)
+                self.dragons_breath = DragonsBreath(self.groups, self.enemy_sprites, self.collision_sprites, self, self.sfx_slider, self.dash_dir)
                 self.state = 'walk'
                 return 'dragons_breath'
             case [4]:
-                rock_wall = RockWall((self.groups, self.collision_sprites), self.enemy_sprites, self, self.pos.copy(), self.dash_dir)
+                rock_wall = RockWall((self.groups, self.collision_sprites), self.enemy_sprites, self, self.sfx_slider, self.pos.copy(), self.dash_dir)
                 rock_wall._layer = 13
                 return 'stone_wall'
             case [3, 1, 4] | [5, 7, 4]:
@@ -325,14 +318,14 @@ class Player(pygame.sprite.Sprite):
         self.is_drawing = False
         self.spell_line.clear_all()
         if self.is_fast_wind:
-            play(self, "fw_end")
+            play(self, "fw_end", self.sfx_slider, volume=0.2)
             pause(self, "fw_loop")
             self.is_fast_wind = False
             for fwe in self.fast_wind_effects:
                 fwe.kill()
 
     def collision(self, direction):
-        for sprite in self.collision_sprites:
+        for sprite in self.collision_sprites.sprites() + self.short_collision_sprites.sprites():
             if sprite.hitbox.colliderect(self.hitbox):
                 if direction == 'horizontal':
                     if self.vel.x > 0:
@@ -409,7 +402,7 @@ class Player(pygame.sprite.Sprite):
 
         self.run_sfx_timer -= dt * self.run_sfx_frequency
         if self.run_sfx_timer <= 0:
-            play(self, "footsteps")
+            play(self, "footsteps", self.sfx_slider, volume=0.3)
             self.run_sfx_timer = self.run_sfx_timer_max
 
     def update(self, dt):
@@ -421,5 +414,10 @@ class Player(pygame.sprite.Sprite):
         self.animate(dt)
         self.update_timers(dt)
 
-        if self.mana_bar.charge < 6 and self.recharge_timer <= 0:
+        if self.mana_bar.charge < 6 and self.recharge_timer <= 0 and self.fire_timer <= 0:
+            charge_old = self.mana_bar.charge
             self.mana_bar.charge = min(self.mana_bar.charge + self.recharge_rate * self.fast_wind_speed_mult * dt, 6) if self.is_fast_wind else min(self.mana_bar.charge + self.recharge_rate * dt, 6)
+            if self.mana_bar.charge == 6:
+                play(self, "mana_bar", self.sfx_slider, volume=0.08, index=1)
+            elif self.mana_bar.charge % 1 - charge_old % 1 < 0:
+                play(self, "mana_bar", self.sfx_slider, volume=0.08, index=0)

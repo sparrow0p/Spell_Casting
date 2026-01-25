@@ -5,19 +5,20 @@ from particles import *
 from components import *
 
 class ShootingStar(pygame.sprite.Sprite):
-    def __init__(self, pos, dir, groups, enemy_sprites, player, collision_sprites):
+    def __init__(self, pos, dir, groups, enemy_sprites, player, collision_sprites, sfx_slider):
         super().__init__(groups)
         self.groups = groups
         self.enemy_sprites = enemy_sprites
         self.player = player
+        self.sfx_slider = sfx_slider
         self.dir = dir.normalize()
         self.state, self.frame_index = 'fly', 0
-        self.image = pygame.Surface((20, 20))
+        self.image = pygame.Surface((0, 0))
         self.rect = self.image.get_rect(center=pos)
-        self.hitbox = self.rect
+        self.hitbox = pygame.rect.Rect(self.rect.center - pygame.Vector2(10, 10), (20, 20))
         self.sounds = {}
-        load_audio(self, 'spells/shooting_star', 0.2)
-        play(self, "fly")
+        load_audio(self, 'spells/shooting_star')
+        play(self, "fly", self.sfx_slider, volume=0.2)
         self.collision_sprites = collision_sprites
         self.pos = pygame.Vector2(self.rect.center)
         self.speed = 2500
@@ -77,7 +78,7 @@ class ShootingStar(pygame.sprite.Sprite):
                     self.particle_emitter.kill()
                     self.particle_emitter = ParticleEmitter(self.groups, self.pos.copy(), ShootingStarExplodeParticle, amount=100, one_shot=True)
                     self.particle_emitter._layer = 13
-                    play(self, "explode", play_all=True)
+                    play(self, "explode", self.sfx_slider, volume=0.2, play_all=True)
                     pause(self, "fly")
             case 'explode':
                 pass
@@ -101,10 +102,11 @@ class ShootingStar(pygame.sprite.Sprite):
         self.change_state()
 
 class FastWindEffect(pygame.sprite.Sprite):
-    def __init__(self, pos, follow_strength, player, groups):
+    def __init__(self, pos, follow_strength, player, groups, sfx_slider):
         super().__init__(groups)
         self.follow_strength = follow_strength
         self.player = player
+        self.sfx_slider = sfx_slider
         self.animate()
         self.rect = self.image.get_rect(center=pos)
         self.hitbox = self.rect
@@ -140,19 +142,20 @@ class FastWindEffect(pygame.sprite.Sprite):
             self.image_timer = self.image_timer_max
 
 class RockWall(pygame.sprite.Sprite):
-    def __init__(self, groups, enemy_sprites, player, pos, dir):
+    def __init__(self, groups, enemy_sprites, player, sfx_slider, pos, dir):
         super().__init__(groups)
         self.groups = groups
         self.enemy_sprites = enemy_sprites
         self.player = player
+        self.sfx_slider = sfx_slider
         self.frames = []
         self.load_images()
         self.image = pygame.image.load(join('images', 'spells', 'rock_pillar', 'rock_pillar0.png')).convert_alpha()
         self.image = pygame.transform.scale(self.image, (3 * TILE_SIZE, 3.5 * TILE_SIZE))
         self.frame_index = 0
         self.sounds = {}
-        load_audio(self, 'spells/rock_wall', 0.3)
-        play(self, "create")
+        load_audio(self, 'spells/rock_wall')
+        play(self, "create", self.sfx_slider, volume=0.3)
         self.dir = dir
         self.pos = pos + pygame.Vector2(2.5 * dir.x * TILE_SIZE, 2.25 * dir.y * TILE_SIZE - 0.5 * TILE_SIZE)
         self.rect = self.image.get_rect(center=self.pos)
@@ -189,7 +192,7 @@ class RockWall(pygame.sprite.Sprite):
         if self.i_frame_timer <= 0:
             self.health -= damage
             self.i_frame_timer = self.i_frame_timer_max
-            play(self, "damage", play_all=True)
+            play(self, "damage", self.sfx_slider, volume=0.3, play_all=True)
             if self.health <= 0:
                 if type and dir:
                     self.destroy(type, dir)
@@ -217,9 +220,9 @@ class RockWall(pygame.sprite.Sprite):
         self.kill()
 
     def kill(self):
-        pe = ParticleEmitter(self.groups, self.pos, RockWallExplosion, one_shot=True, amount=8)
+        pe = ParticleEmitter(self.groups[0], self.pos, RockWallExplosion, one_shot=True, amount=8)
         pe._layer = 13
-        play(self, "destroy", play_all=True)
+        play(self, "destroy", self.sfx_slider, volume=0.2, play_all=True)
         super().kill()
 
     def animate(self, dt):
@@ -329,10 +332,11 @@ class RockWallRocks(pygame.sprite.Sprite):
 
 
 class HealthDrain(pygame.sprite.Sprite):
-    def __init__(self, groups, player):
+    def __init__(self, groups, player, sfx_slider):
         super().__init__(groups)
         self.groups = groups
         self.player = player
+        self.sfx_slider = sfx_slider
         self.offset = pygame.Vector2(0, 0)
         self.height = 0.8 * TILE_SIZE
         self.amplitude = 0.2 * TILE_SIZE
@@ -340,8 +344,8 @@ class HealthDrain(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.player.pos)
         self.hitbox = self.rect
         self.sounds = {}
-        load_audio(self, "spells/health_drain", 0.1)
-        play(self, "create", play_all=True)
+        load_audio(self, "spells/health_drain")
+        play(self, "create", self.sfx_slider, volume=0.1, play_all=True)
         self.particle_emitter1 = ParticleEmitter(self.groups, self.player.pos - (self.amplitude, 0), HealingParticle, dir=pygame.Vector2(0, 1), cooldown_timer_max=0.008)
         self.particle_emitter2 = ParticleEmitter(self.groups, self.player.pos + (self.amplitude, 0), HealingParticle, dir=pygame.Vector2(0, 1), cooldown_timer_max=0.008)
         self.particle_emitter1._layer = 14
@@ -368,20 +372,20 @@ class HealthDrain(pygame.sprite.Sprite):
 
 
 class DragonsBreath(pygame.sprite.Sprite):
-    def __init__(self, groups, enemy_sprites, collision_sprites, player, dir):
+    def __init__(self, groups, enemy_sprites, collision_sprites, player, sfx_slider, dir):
         super().__init__(groups)
         self.groups = groups
         self.enemy_sprites = enemy_sprites
         self.collision_sprites = collision_sprites
         self.player = player
+        self.sfx_slider = sfx_slider
         self.image = pygame.Surface((0, 0))
         self.rect = self.image.get_rect(center=self.player.pos)
         self.hitbox = self.rect
         self.sounds = {}
-        load_audio(self, "spells/dragons_breath", 0.6)
-        play(self, "start")
-        self.sounds["loop"][0].set_volume(0.25)
-        play(self, "loop", repeat=-1)
+        load_audio(self, "spells/dragons_breath")
+        play(self, "start", self.sfx_slider, volume=0.8)
+        play(self, "loop", self.sfx_slider, volume=0.3, repeat=-1)
         self.fire_timer = 0
         self.fire_timer_max = 0.1
         self.last_dir = dir
@@ -400,7 +404,7 @@ class DragonsBreath(pygame.sprite.Sprite):
             dbf._layer = 13
 
     def kill(self):
-        play(self, "end")
+        play(self, "end", self.sfx_slider, volume=0.7)
         pause(self, "loop")
         super().kill()
 
