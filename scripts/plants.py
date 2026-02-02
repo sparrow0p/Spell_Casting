@@ -8,7 +8,7 @@ class Plant(pygame.sprite.Sprite):
         self.image = pygame.image.load(join('images', 'decals', 'plants', f'{self.t_obj.name}.png')).convert_alpha()
         self.image = pygame.transform.scale(self.image, (WORLD_SCALE * self.image.get_width(), WORLD_SCALE * self.image.get_height()))
         self.rect = self.image.get_rect(topleft=(WORLD_SCALE * self.t_obj.x, WORLD_SCALE * self.t_obj.y))
-        self.hitbox = pygame.rect.Rect(0, 0, self.t_obj.h_width, self.t_obj.h_height)
+        self.hitbox = pygame.rect.Rect(0, 0, WORLD_SCALE * self.t_obj.h_width, WORLD_SCALE * self.t_obj.h_height)
         self.hitbox.bottom = self.rect.bottom - WORLD_SCALE * self.t_obj.h_offset
         self.hitbox.centerx = self.rect.centerx
         shadow = Shadow(self.groups[0], self.t_obj)
